@@ -1,0 +1,111 @@
+{
+  "candidateVersion": "1.2-candidate",
+  "expectations": [
+    {
+      "id": "ratings",
+      "fixtureVersion": "v1.2-ratings-1",
+      "requirement": "Independent ratings are preserved and median aggregation is correct.",
+      "preconditions": [
+        "Signed freeze record",
+        "Named fixture owner"
+      ],
+      "inputOrInjectedFault": "Three fixed reviewer-rating sets, including a known median case.",
+      "expectedResult": "Original ratings preserved; computed medians equal fixture expectations.",
+      "requiredEvidence": [
+        "reviewer-submission snapshot",
+        "aggregation calculation"
+      ]
+    },
+    {
+      "id": "review-blocks",
+      "fixtureVersion": "v1.2-review-blocks-1",
+      "requirement": "Disagreement and critical findings block approval.",
+      "preconditions": [
+        "Signed freeze record",
+        "Named fixture owner"
+      ],
+      "inputOrInjectedFault": "Conflicting ratings plus one reviewer-only critical defect.",
+      "expectedResult": "Spread >=2 requires adjudication and unresolved critical defect blocks approval.",
+      "requiredEvidence": [
+        "blocking decision log",
+        "original reviewer records"
+      ]
+    },
+    {
+      "id": "failure-controls",
+      "fixtureVersion": "v1.2-failure-controls-1",
+      "requirement": "Failures activate required stop/recovery/resumption controls.",
+      "preconditions": [
+        "Signed freeze record",
+        "Named fixture owner"
+      ],
+      "inputOrInjectedFault": "Controlled fixtures for all seven failure classes plus mocked provider faults.",
+      "expectedResult": "Each failure triggers its prescribed stop action and cannot resume without required evidence.",
+      "requiredEvidence": [
+        "failure log",
+        "recovery evidence",
+        "resume decision"
+      ]
+    },
+    {
+      "id": "repair-accounting",
+      "fixtureVersion": "v1.2-repair-accounting-1",
+      "requirement": "Repairs remain visible in first-pass and accumulated-cost metrics.",
+      "preconditions": [
+        "Signed freeze record",
+        "Named fixture owner"
+      ],
+      "inputOrInjectedFault": "Known jobs, costs, retries, failures and repairs.",
+      "expectedResult": "Calculated denominators/cost totals equal fixture values and repaired failures remain first-pass failures.",
+      "requiredEvidence": [
+        "calculation output",
+        "cost ledger",
+        "attempt history"
+      ]
+    },
+    {
+      "id": "dependency-invalidation",
+      "fixtureVersion": "v1.2-dependency-1",
+      "requirement": "Artifact changes invalidate exactly the dependent approvals.",
+      "preconditions": [
+        "Signed freeze record",
+        "Named fixture owner"
+      ],
+      "inputOrInjectedFault": "Controlled source, prose, image and export-configuration changes.",
+      "expectedResult": "Affected approvals reopen; unaffected approvals remain reusable only when dependencies are unchanged.",
+      "requiredEvidence": [
+        "before/after dependency map",
+        "approval invalidation log"
+      ]
+    },
+    {
+      "id": "release-package",
+      "fixtureVersion": "v1.2-release-package-1",
+      "requirement": "Immutable release package is sufficient to reconstruct the decision.",
+      "preconditions": [
+        "Signed freeze record",
+        "Named fixture owner"
+      ],
+      "inputOrInjectedFault": "Candidate package with IDs, hashes, reviews, defects, regressions, exports, costs and approvals.",
+      "expectedResult": "Validation accepts complete package and rejects a package missing any mandatory identity/evidence field.",
+      "requiredEvidence": [
+        "release-package validation output",
+        "package manifest"
+      ]
+    },
+    {
+      "id": "promotion-separation",
+      "fixtureVersion": "v1.2-promotion-1",
+      "requirement": "Book, software and protocol promotion states remain independent.",
+      "preconditions": [
+        "Signed freeze record",
+        "Named fixture owner"
+      ],
+      "inputOrInjectedFault": "Three separate promotion-domain records with mixed outcomes.",
+      "expectedResult": "No domain is promoted because another domain passed; each retains its own status/evidence.",
+      "requiredEvidence": [
+        "promotion decision records"
+      ]
+    }
+  ]
+}

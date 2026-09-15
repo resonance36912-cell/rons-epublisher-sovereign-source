@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  GENERATED FILE — do not edit by hand.
+  Source: scripts/generate-sitemap.mjs (runs on predev/prebuild).
+  Each URL serves a <link rel="canonical"> pointing at its Hub equivalent on
+  https://reson8.life (see src/components/Seo.tsx and index.html), so crawlers
+  discover the spoke pages here and consolidate indexing onto the Hub.
+  <lastmod> is the last git commit date of that page's source file(s).
+  Routes disallowed in robots.txt are excluded.
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <!-- canonical: https://reson8.life/apps/epublisher -->
+  <url>
+    <loc>https://www.resonanceonline.life/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <!-- canonical: https://reson8.life/about -->
+  <url>
+    <loc>https://www.resonanceonline.life/about</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <!-- canonical: https://reson8.life/pricing -->
+  <url>
+    <loc>https://www.resonanceonline.life/pricing</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <!-- canonical: https://reson8.life/support -->
+  <url>
+    <loc>https://www.resonanceonline.life/contact</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <!-- canonical: https://reson8.life/terms -->
+  <url>
+    <loc>https://www.resonanceonline.life/terms</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  <!-- canonical: https://reson8.life/privacy -->
+  <url>
+    <loc>https://www.resonanceonline.life/privacy</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  <!-- canonical: https://reson8.life/apps/epublisher -->
+  <url>
+    <loc>https://www.resonanceonline.life/sitemap</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  <!-- canonical: https://reson8.life/apps/epublisher -->
+  <url>
+    <loc>https://www.resonanceonline.life/samples/the-vision-of-diagnostics</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <!-- canonical: https://reson8.life/apps/epublisher -->
+  <url>
+    <loc>https://www.resonanceonline.life/samples/the-secrets-of-the-universe</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <!-- canonical: https://reson8.life/apps/epublisher -->
+  <url>
+    <loc>https://www.resonanceonline.life/samples/ashley-uys-story</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <!-- canonical: https://reson8.life/apps/epublisher -->
+  <url>
+    <loc>https://www.resonanceonline.life/samples/automate-your-life</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+</urlset>

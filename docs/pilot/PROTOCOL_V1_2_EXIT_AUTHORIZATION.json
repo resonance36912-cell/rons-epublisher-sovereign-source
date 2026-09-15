@@ -1,0 +1,16 @@
+{
+  "frozenSpecificationId": "",
+  "configurationId": "",
+  "dryRunEvidencePackageId": "",
+  "mandatoryChecks": {"total":7,"passed":0,"failed":0,"blocked":7,"notRun":0},
+  "unresolvedDefectsAndDisposition": [],
+  "liveSmokeTest": {"authorized":false,"scope":"","spendingCap":null,"result":"NOT_RUN"},
+  "changesSinceFreeze": [],
+  "requiredRetestsCompleted": false,
+  "decision": "WITHHOLD_AUTHORIZATION",
+  "authorizedBenchmarkScope": "",
+  "authorizedSpendingCeiling": null,
+  "approvalAuthority": "",
+  "signature": "",
+  "signedAt": ""
+}

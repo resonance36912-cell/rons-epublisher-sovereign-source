@@ -1,0 +1,13 @@
+﻿{
+    "candidateId":  "production-protocol-v1.0-candidate",
+    "designation":  "Production Protocol v1.0 - Candidate",
+    "status":  "controlled-pilot candidate; not production validated",
+    "scope":  "six-page illustrated-biography pilot preparation",
+    "focusedTests":  "14/14 passed",
+    "syntheticDryRun":  "8/8 process checks passed",
+    "fullSuite":  "349 active passed; 52 environment-dependent skipped",
+    "build":  "passed",
+    "ronsAcceptance":  "12/12 passed",
+    "competitiveEvidence":  "none; claim gate blocked by design",
+    "freezeDate":  "2026-09-12 SAST"
+}

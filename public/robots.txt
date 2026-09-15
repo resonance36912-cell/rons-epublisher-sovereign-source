@@ -1,0 +1,77 @@
+# GENERATED FILE — do not edit by hand.
+# Source: scripts/generate-robots.mjs + scripts/site-routes.mjs
+# (runs on predev/prebuild after sitemap generation, same route
+#  source-of-truth as sitemap.xml; Sitemap: lines match the files emitted).
+
+User-agent: Googlebot
+Allow: /
+Disallow: /app
+Disallow: /auth
+Disallow: /admin
+Disallow: /account
+Disallow: /billing
+Disallow: /checkout
+Disallow: /reset-password
+Disallow: /privacy/access
+Disallow: /__test
+Disallow: /lovable
+Disallow: /not-found
+
+User-agent: Bingbot
+Allow: /
+Disallow: /app
+Disallow: /auth
+Disallow: /admin
+Disallow: /account
+Disallow: /billing
+Disallow: /checkout
+Disallow: /reset-password
+Disallow: /privacy/access
+Disallow: /__test
+Disallow: /lovable
+Disallow: /not-found
+
+User-agent: Twitterbot
+Allow: /
+Disallow: /app
+Disallow: /auth
+Disallow: /admin
+Disallow: /account
+Disallow: /billing
+Disallow: /checkout
+Disallow: /reset-password
+Disallow: /privacy/access
+Disallow: /__test
+Disallow: /lovable
+Disallow: /not-found
+
+User-agent: facebookexternalhit
+Allow: /
+Disallow: /app
+Disallow: /auth
+Disallow: /admin
+Disallow: /account
+Disallow: /billing
+Disallow: /checkout
+Disallow: /reset-password
+Disallow: /privacy/access
+Disallow: /__test
+Disallow: /lovable
+Disallow: /not-found
+
+User-agent: *
+Allow: /
+Disallow: /app
+Disallow: /auth
+Disallow: /admin
+Disallow: /account
+Disallow: /billing
+Disallow: /checkout
+Disallow: /reset-password
+Disallow: /privacy/access
+Disallow: /__test
+Disallow: /lovable
+Disallow: /not-found
+
+Sitemap: https://reson8.life/sitemap.xml
+Sitemap: https://www.resonanceonline.life/sitemap.xml

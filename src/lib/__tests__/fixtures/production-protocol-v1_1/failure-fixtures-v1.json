@@ -1,0 +1,9 @@
+{
+  "invalid-structure": {"inject": "1199 story nodes", "expectedStop": "block export", "resumeEvidence": "passing structure validation"},
+  "unsupported-factual-claim": {"inject": "unsupported biography claim", "expectedStop": "block book", "resumeEvidence": "updated claim ledger and editorial approval"},
+  "unintended-access": {"inject": "unauthorized share path", "expectedStop": "suspend release path", "resumeEvidence": "access remediation and passing retest"},
+  "lost-edits-or-corrupt-assets": {"inject": "corrupt saved asset", "expectedStop": "stop project writes", "resumeEvidence": "verified restoration and preservation test"},
+  "provider-interruption": {"inject": "mock timeout after dispatch", "expectedStop": "mark unresolved and reconcile", "resumeEvidence": "confirmed provider status and duplicate-prevention check"},
+  "spending-limit-reached": {"inject": "mock committed cost at ceiling", "expectedStop": "stop new paid dispatch", "resumeEvidence": "explicit budget increase authorization"},
+  "repair-limit-exhausted": {"inject": "mock repair counter exhausted", "expectedStop": "block component", "resumeEvidence": "approved intervention or revised specification"}
+}

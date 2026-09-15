@@ -1,0 +1,40 @@
+{
+  "candidateVersion": "1.2-candidate",
+  "status": "Candidate; freeze and dry-run completion not established.",
+  "instructions": "Human owner completes these decisions. Do not mint a frozen specification ID or authorize execution from this worksheet alone.",
+  "freezeDecisions": {
+    "reviewerIds": ["", "", ""],
+    "adjudicator": "",
+    "approvalAuthority": "",
+    "comparatorName": "",
+    "comparatorPlan": "",
+    "correctionAllowanceMinutes": null,
+    "spendingCeiling": null,
+    "ownerSignatureName": "",
+    "ownerSignedAt": ""
+  },
+  "competitivePlanDecisions": {
+    "requiredDeliverables": [],
+    "minimumMeaningfulImprovement": ""
+  },
+  "fixtureOwners": {
+    "ratings": "",
+    "review-blocks": "",
+    "failure-controls": "",
+    "repair-accounting": "",
+    "dependency-invalidation": "",
+    "release-package": "",
+    "promotion-separation": ""
+  },
+  "authorizationState": {
+    "benchmarkAuthorized": false,
+    "liveSmokeAuthorized": false,
+    "fixtureDispatchAuthorized": false
+  },
+  "afterHumanCompletion": [
+    "Independent verifier checks every populated decision and confirms both authorization records remain false.",
+    "Only then generate the frozen specification/configuration identifiers and immutable manifest.",
+    "Recalculate execution records: eligible BLOCKED records become NOT_RUN, never PASS.",
+    "Dry-run dispatch still requires separate authorization against the frozen identifiers."
+  ]
+}

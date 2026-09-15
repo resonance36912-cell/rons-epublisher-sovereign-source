@@ -1,0 +1,24 @@
+{
+  "extends": "./tsconfig.app.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "emitDeclarationOnly": true,
+    "declaration": true,
+    "declarationMap": true,
+    "allowImportingTsExtensions": false,
+    "outDir": "./dist/types",
+    "rootDir": "./src",
+    "types": []
+  },
+  "include": [
+    "src/test-utils/index.ts",
+    "src/test-utils/slider-thumb-focus.ts",
+    "src/test-utils/admin-surface-parity.ts",
+    "src/test-utils/focus-restoration.ts"
+  ],
+  "exclude": [
+    "src/test-utils/__tests__",
+    "**/*.test.ts",
+    "**/*.test.tsx"
+  ]
+}

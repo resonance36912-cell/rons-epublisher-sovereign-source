@@ -1,0 +1,9 @@
+{
+  "_comment": "Known-accepted high/critical findings from scripts/security-scan.mjs. Each id must match exactly. Add an entry only after reviewing the finding and confirming it is intentional or mitigated elsewhere.",
+  "ignored": [
+    "high:service-role-without-auth:supabase/functions/payfast-itn/index.ts"
+  ],
+  "_notes": {
+    "high:service-role-without-auth:supabase/functions/payfast-itn/index.ts": "PayFast ITN webhook is called by PayFast servers, not end users. verify_jwt=false is required and auth is enforced via verifySignature() over the PayFast passphrase."
+  }
+}

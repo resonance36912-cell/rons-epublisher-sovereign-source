@@ -1,0 +1,18 @@
+{
+  "comparatorName": "",
+  "comparatorPlan": "",
+  "eligibleTasks": [
+    "six-page illustrated biography"
+  ],
+  "requiredDeliverables": [],
+  "primaryOutcome": "approved-book acceptance rate",
+  "correctionTimeLimitMinutes": null,
+  "spendingLimit": null,
+  "failureTreatment": "Count every started job in the denominator; retain failures after repair.",
+  "tieTreatment": "Report ties as ties; do not convert them to wins.",
+  "unsupportedInputTreatment": "Block and record unsupported inputs; do not score them as successful outputs.",
+  "minimumMeaningfulImprovement": "",
+  "statisticalAnalysis": "Account for repeated runs within briefs and multiple ratings of the same book; report uncertainty for the primary outcome.",
+  "stoppingRule": "Run every preregistered benchmark job with no optional stopping for observed performance; stop only for a mandatory safety/access-control/data-preservation failure or before the approved spending ceiling would be exceeded.",
+  "unseenConfirmationBriefs": true
+}

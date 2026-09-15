@@ -1,0 +1,36 @@
+/* The Resonance — drop-in design tokens.
+   Paste into src/styles.css of each app, then map to Tailwind via theme vars. */
+
+:root {
+  /* Surfaces */
+  --background: 222 47% 6%;
+  --foreground: 0 0% 98%;
+  --card: 222 47% 9%;
+  --card-foreground: 0 0% 98%;
+  --muted: 222 30% 14%;
+  --muted-foreground: 0 0% 70%;
+  --border: 0 0% 100% / 0.1;
+
+  /* Brand spine */
+  --primary: 295 90% 60%;
+  --primary-foreground: 0 0% 100%;
+  --primary-glow: 325 90% 65%;
+  --gradient-brand: linear-gradient(
+    135deg,
+    hsl(265 85% 65%),
+    hsl(295 90% 60%),
+    hsl(325 90% 65%)
+  );
+
+  /* Per-app accents (use only the one this app owns) */
+  --accent-epublisher: 295 90% 60%;
+  --accent-creative-studio: 265 85% 65%;
+  --accent-sync-vision: 325 90% 65%;
+  --accent-podcast: 190 90% 60%;
+  --accent-career-compass: 150 80% 55%;
+  --accent-youtube-optimizer: 0 84% 60%;
+
+  /* Shadows & glows */
+  --shadow-elegant: 0 10px 30px -10px hsl(var(--primary) / 0.3);
+  --shadow-glow: 0 0 40px -5px hsl(var(--primary) / 0.8);
+}

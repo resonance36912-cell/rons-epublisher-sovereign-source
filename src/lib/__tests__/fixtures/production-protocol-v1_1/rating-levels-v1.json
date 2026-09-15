@@ -1,0 +1,28 @@
+{
+  "facts": {
+    "0": "No traceable factual support; core claims unusable.",
+    "1": "Major unsupported or contradictory claims require reconstruction.",
+    "2": "Several substantive claim corrections or source gaps remain.",
+    "3": "Mostly supportable after limited substantive factual editing.",
+    "4": "All material claims supported; only minor factual polish remains.",
+    "5": "Complete, precise claim ledger with exemplary source traceability."
+  },
+  "prose": {
+    "0": "Unreadable or missing narrative.",
+    "1": "Major structural rewriting required.",
+    "2": "Multiple substantive clarity, tone or coherence corrections required.",
+    "3": "Acceptable after limited substantive editing.",
+    "4": "Publication quality with minor polish only.",
+    "5": "Exemplary clarity, coherence, tone and audience fit."
+  },
+  "visual": {
+    "0": "Missing or unusable visuals.", "1": "Major visual mismatch or defects.",
+    "2": "Multiple substantive consistency/alignment repairs required.", "3": "Acceptable after limited visual repair.",
+    "4": "Publication quality with minor polish only.", "5": "Exemplary consistency and text-image alignment."
+  },
+  "layout": {
+    "0": "Broken or inaccessible layout.", "1": "Major reconstruction required.",
+    "2": "Multiple substantive layout corrections required.", "3": "Acceptable after limited layout editing.",
+    "4": "Publication quality with minor polish only.", "5": "Exemplary hierarchy, readability and export stability."
+  }
+}

@@ -1,0 +1,74 @@
+{
+  "candidateId": "production-protocol-v1.1-candidate",
+  "rubricVersion": "v1.1-r1",
+  "fixtureSetVersion": "v1.1-f1",
+  "analysisPlanVersion": "v1.1-a1",
+  "scoringExampleSetId": "v1.1-c1",
+  "artifacts": [
+    {
+      "path": "docs/PRODUCTION_PROTOCOL_V1_1_CANDIDATE.md",
+      "sha256": "454b0e70441aa584fbf62618b63f312567031e4ee4cb4b92455b01b76dc08c08"
+    },
+    {
+      "path": "docs/calibration/PROTOCOL_V1_CANDIDATE_CALIBRATION_EXAMPLES.md",
+      "sha256": "9fd7ec7126c46584fd6ca9f39ad7dd25f6cbc3512725daf551d9faec66095d47"
+    },
+    {
+      "path": "docs/pilot/PROTOCOL_V1_1_AMENDMENT_RECORD.json",
+      "sha256": "8584a245bd8bc55f3fb5401227e757d1cb0cfdfd8501d0965b30dec7b8ded601"
+    },
+    {
+      "path": "docs/pilot/PROTOCOL_V1_1_ANALYSIS_PLAN.md",
+      "sha256": "41cb9360c61349231c0fbaa74b76c5ddbe32e0be16df5aa0aa9c7a7802588b48"
+    },
+    {
+      "path": "docs/pilot/PROTOCOL_V1_1_COMPETITIVE_PLAN.json",
+      "sha256": "08e008bb1cb1b4b7723e7d5f7b70e6be529790549a5619cb4aea1b6bbe647b44"
+    },
+    {
+      "path": "docs/pilot/PROTOCOL_V1_1_RUBRIC.md",
+      "sha256": "fe85f2ed776180e2859d7c4e6775e9bb9ef7d19e4f0004d3d682ee87796b529e"
+    },
+    {
+      "path": "scripts/run-production-protocol-v1_1-dry-run.ts",
+      "sha256": "a1951f0519ebd559f77481c982ba76c35085d634d64b8b58279a22f5037a9d73"
+    },
+    {
+      "path": "src/lib/__tests__/fixtures/production-protocol-v1_1/adjudication-examples-v1.json",
+      "sha256": "42990ccc9fd69dc8dbeadf7d429391258c00da09598865c0ff04f1aef9b629f4"
+    },
+    {
+      "path": "src/lib/__tests__/fixtures/production-protocol-v1_1/dependency-fixtures-v1.json",
+      "sha256": "aadd2b58ab4d46c06e5d04dcc5f85e143d21024df51d0e5aa4c76e5484d93e1a"
+    },
+    {
+      "path": "src/lib/__tests__/fixtures/production-protocol-v1_1/failure-fixtures-v1.json",
+      "sha256": "bd20697caeada63e1bff0c37a16326140dcfc8633961efd72ca14c7048b8f92c"
+    },
+    {
+      "path": "src/lib/__tests__/fixtures/production-protocol-v1_1/fixture-inventory.json",
+      "sha256": "ebec13c1a003abfe4cffbc0dd5de325c7eae7c176fd7ebeffd454bb0febb7aac"
+    },
+    {
+      "path": "src/lib/__tests__/fixtures/production-protocol-v1_1/measurement-accounting-v1.json",
+      "sha256": "f44fe6d50aee29d77ad964123df83204af248a5a7bdf7584f4cc6766f4e631f9"
+    },
+    {
+      "path": "src/lib/__tests__/fixtures/production-protocol-v1_1/mock-provider-faults-v1.json",
+      "sha256": "8322f3f98726796900b43872759aff66f82800b6fff8248e3d5a2d3752f4356e"
+    },
+    {
+      "path": "src/lib/__tests__/fixtures/production-protocol-v1_1/rating-levels-v1.json",
+      "sha256": "48eef46c7e972bf7e09927a5337c6ead66b9f4774adaa466732061b3a9325dfb"
+    },
+    {
+      "path": "src/lib/__tests__/production-protocol.test.ts",
+      "sha256": "d4718db1eb54be641149b634390bf913269a68f50ad32d3112a46e2611605f61"
+    },
+    {
+      "path": "src/lib/production-protocol.ts",
+      "sha256": "7876df1d44375be149925245e0ba553312335895d2c2cbb17a49285447fa7a4d"
+    }
+  ],
+  "manifestSha256": "470d41a5455f2701cab4bdcb2e881392e24c8a2da86461645d0625c84959f09d"
+}

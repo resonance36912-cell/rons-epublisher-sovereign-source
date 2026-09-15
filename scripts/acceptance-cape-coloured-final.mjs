@@ -1,0 +1,90 @@
+import { chromium } from '@playwright/test';
+import { readFile, writeFile } from 'node:fs/promises';
+const out='C:/Users/Ashley/Resonance/OpenNova/apps/epublisher-sovereign-local-v0.1/docs/generated';
+const browser=await chromium.launch({channel:'chrome',headless:true});
+const page=await browser.newPage({viewport:{width:1440,height:1500},acceptDownloads:true});
+const log=[]; const snap=async(name)=>{const text=await page.locator('body').innerText();log.push(`\n## ${name}\n${text}`);await page.screenshot({path:`${out}/${name}.png`,fullPage:true});};
+page.on('pageerror',(error)=>console.error('PAGE_ERROR',error.message));
+page.on('console',(message)=>{if(message.type()==='error') console.error('BROWSER_ERROR',message.text());});
+page.on('response',(response)=>{if(response.status()>=500) console.error('BROWSER_HTTP_ERROR',response.status(),response.url());});
+const cardFor=async(title)=>{const titleEl=page.getByText(title,{exact:true}).first();return titleEl.locator('xpath=ancestor::div[contains(@class,"rounded-lg") and contains(@class,"border")][1]');};
+await page.goto('http://127.0.0.1:3101/app',{waitUntil:'networkidle',timeout:30000});
+await page.locator('textarea').first().fill('The History of Cape Coloured People');
+await page.getByRole('button',{name:'Research',exact:true}).click();
+await page.waitForFunction(()=>document.body.innerText.includes('Discovery complete'),null,{timeout:60000});
+await snap('acceptance-final-01-review');for(const title of ['Coloureds','Cape Malays','Hanover Park, Cape Town']){
+  const card=await cardFor(title);
+  const box=card.getByRole('checkbox');
+  if(!(await box.isChecked())) await box.click();
+}
+const selectedLine=page.getByText(/sources selected$/).last();
+const selectedText=await selectedLine.innerText();
+const selectedCount=Number(selectedText.match(/^(\d+) sources selected$/)?.[1]||0);
+if(selectedCount<3) throw new Error(`Expected the three required sources to be selected, saw: ${selectedText}`);
+await snap('acceptance-final-02-selection');
+await page.getByRole('button',{name:new RegExp(`Extract content from ${selectedCount} selected sources`)}).click();
+await page.waitForFunction(()=>document.body.innerText.includes('Extraction complete'),null,{timeout:90000});
+await snap('acceptance-final-03-extraction');
+const beforeApproval=await page.locator('body').innerText();
+const approve=page.getByRole('button',{name:'Approve short extract for generation'});
+let approvals=0;
+while(await approve.count()){await approve.first().click();approvals++;}
+await snap('acceptance-final-04-short-reviewed');
+await page.getByRole('button',{name:/Configure Story/i}).click();
+await page.waitForTimeout(400);
+await snap('acceptance-final-05-configure');
+await page.getByRole('button',{name:/Generate Storyboard/i}).click();
+await page.waitForFunction(()=>Array.from(document.querySelectorAll('button')).some((b)=>/Storyline/i.test(b.textContent||'')&&!b.disabled),null,{timeout:90000});
+await snap('acceptance-final-06-storyboard');
+const storyboardText=await page.locator('body').innerText();
+for(const bad of ['Open Nova note','Patreon','Welcome to My Activity','250 Objects That Tell the Story of America','Today, we\'re going to discuss']){
+  if(storyboardText.includes(bad)) throw new Error(`Storyboard contamination: ${bad}`);
+}await page.getByRole('button',{name:/Storyline/i}).last().click();
+await page.getByRole('button',{name:'Accept Storyline',exact:true}).waitFor({state:'visible',timeout:60000});
+await snap('acceptance-final-07-storyline');
+const storylineText=await page.locator('body').innerText();
+for(const bad of ['Open Nova note','Patreon','Welcome to My Activity','250 Objects That Tell the Story of America','Today, we\'re going to discuss']){
+  if(storylineText.includes(bad)) throw new Error(`Storyline contamination: ${bad}`);
+}
+await page.getByRole('button',{name:'Accept Storyline',exact:true}).click();
+await page.getByRole('button',{name:/Continue as-is/i}).waitFor({state:'visible',timeout:10000});
+await snap('acceptance-final-07b-storyline-accepted');
+await page.getByRole('button',{name:/Continue as-is/i}).click();
+await page.waitForTimeout(1000);
+await snap('acceptance-final-08-storybook-diagnostic');
+await page.waitForFunction(()=>Array.from(document.querySelectorAll('button')).some((b)=>/AudioVisual eBook/i.test(b.textContent||'')),null,{timeout:30000});
+await snap('acceptance-final-08-storybook');
+await page.getByRole('button',{name:/AudioVisual eBook/i}).click();
+await page.waitForTimeout(1500);
+await snap('acceptance-final-09-visualbook');
+console.log('VISUAL_BUTTONS');
+console.log((await page.getByRole('button').allTextContents()).join('\n'));
+const ebookDownloadPromise=page.waitForEvent('download',{timeout:30000});
+await page.getByRole('button',{name:'Download as eBook',exact:true}).click();
+const ebookDownload=await ebookDownloadPromise;
+await ebookDownload.saveAs(`${out}/CAPE_COLOURED_ACCEPTANCE_EXPORTED_20260912.html`);
+const textDownloadPromise=page.waitForEvent('download',{timeout:30000});
+await page.getByRole('button',{name:'Text',exact:true}).click();
+const textDownload=await textDownloadPromise;
+await textDownload.saveAs(`${out}/CAPE_COLOURED_ACCEPTANCE_TEXT_ONLY_20260912.html`);
+const jsonDownloadPromise=page.waitForEvent('download',{timeout:30000});
+await page.getByRole('button',{name:'JSON',exact:true}).click();
+const jsonDownload=await jsonDownloadPromise;
+await jsonDownload.saveAs(`${out}/CAPE_COLOURED_ACCEPTANCE_STORY_DATA_20260912.json`);
+await writeFile(`${out}/CAPE_COLOURED_ACCEPTANCE_FINAL_UI_LOG_20260912.txt`,log.join('\n'),'utf8');
+const ebookHtml=await readFile(`${out}/CAPE_COLOURED_ACCEPTANCE_EXPORTED_20260912.html`,'utf8');
+if(!ebookHtml.includes('aria-label="Chapter source notes"')) throw new Error('Exported HTML omitted chapter source notes');
+if(!ebookHtml.includes('https://en.wikipedia.org/wiki/Cape_Coloureds')) throw new Error('Exported HTML omitted retained source URLs');
+const narratedBodies=[...ebookHtml.matchAll(/data-body="([^"]*)"/g)].map((match)=>match[1]);
+if(narratedBodies.length<1) throw new Error('Expected at least one narration input');
+if(narratedBodies.some((body)=>/https?:\/\//i.test(body))) throw new Error('Narration input contains a provenance URL');
+for(const bad of ['Open Nova note','Patreon','Welcome to My Activity','250 Objects That Tell the Story of America','Today, we\'re going to discuss']){
+  if(ebookHtml.includes(bad)) throw new Error(`Exported HTML contamination: ${bad}`);
+}
+const storyData=JSON.parse(await readFile(`${out}/CAPE_COLOURED_ACCEPTANCE_STORY_DATA_20260912.json`,'utf8'));
+const falselyReady=(storyData.sources||[]).filter((source)=>source.status==='ready'&&!String(source.content||'').trim());
+if(falselyReady.length) throw new Error(`Empty sources relabelled ready: ${falselyReady.map((source)=>source.title).join(', ')}`);
+const metadataOnly=(storyData.sources||[]).filter((source)=>source.contentAvailability==='metadata_only');
+if(metadataOnly.some((source)=>source.status==='ready')) throw new Error('Metadata-only source relabelled ready');
+console.log(`ACCEPTANCE_PASS chapters=${narratedBodies.length} metadata_only=${metadataOnly.length} false_ready=${falselyReady.length}`);
+await browser.close();

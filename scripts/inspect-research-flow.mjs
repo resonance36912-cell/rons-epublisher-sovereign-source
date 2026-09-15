@@ -1,0 +1,11 @@
+import { chromium } from '@playwright/test';
+const browser = await chromium.launch({ channel: 'chrome', headless: true });
+const page = await browser.newPage({ viewport: { width: 1440, height: 1500 } });
+await page.goto('http://127.0.0.1:3101/app', { waitUntil: 'networkidle', timeout: 30000 });
+await page.locator('textarea').first().fill('The History of Cape Coloured People');
+await page.getByRole('button', { name: 'Research', exact: true }).click();
+await page.waitForFunction(() => document.body.innerText.includes('Discovery complete') || document.body.innerText.includes('Discovery error'), null, { timeout: 60000 });
+await page.waitForTimeout(1000);
+console.log((await page.locator('body').innerText()).slice(0, 25000));
+await page.screenshot({ path: 'C:/Users/Ashley/Resonance/OpenNova/apps/epublisher-sovereign-local-v0.1/docs/generated/cape-coloured-review-stage-20260912.png', fullPage: true });
+await browser.close();

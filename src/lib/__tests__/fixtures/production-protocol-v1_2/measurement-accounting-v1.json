@@ -1,0 +1,19 @@
+{
+  "jobs": [
+    {"id": "job-1", "firstPass": "accepted", "approved": true, "providerSpend": 2.0, "humanMinutes": 15, "retries": 0},
+    {"id": "job-2", "firstPass": "failed", "approved": true, "providerSpend": 5.0, "humanMinutes": 35, "retries": 1},
+    {"id": "job-3", "firstPass": "failed", "approved": false, "providerSpend": 3.0, "humanMinutes": 25, "retries": 1},
+    {"id": "job-4", "firstPass": "failed", "approved": false, "providerSpend": 2.0, "humanMinutes": 15, "retries": 0}
+  ],
+  "expected": {
+    "startedJobs": 4,
+    "firstPassAcceptedBooks": 1,
+    "approvedBooks": 2,
+    "providerSpend": 12,
+    "humanReviewMinutes": 90,
+    "providerCostPerApprovedBook": 6,
+    "humanMinutesPerApprovedBook": 45,
+    "firstPassAcceptanceRate": 0.25
+  },
+  "rule": "Repairs never rewrite original first-pass outcomes and all failed/retry spend remains accumulated."
+}

@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "defaults": {
+    "profile": "production",
+    "language": "auto",
+    "preserveEvidence": true
+  },
+  "audio": {
+    "sampleRate": 16000,
+    "channels": 1,
+    "normalize": true,
+    "denoise": "auto",
+    "loudnessTargetLufs": -16
+  },
+  "stt": {
+    "engine": "rons-local-whisper",
+    "preferredModel": "large-v3",
+    "installedFallbackModel": "whisper-small",
+    "beamSize": 5,
+    "wordTimestamps": true,
+    "segmentTimestamps": true
+  }  ,"storyboard": {
+    "sceneDetection": true,
+    "summaryMaxScenes": 6,
+    "standardMaxScenes": 12,
+    "extensiveMaxScenes": 20,
+    "targetCharsPerScene": {
+      "summary": 2600,
+      "standard": 2400,
+      "extensive": 2200
+    },
+    "suppressBoilerplate": true,
+    "inventedContentAllowed": false,
+    "canonicalIntermediate": "storyboard.json"
+  },
+  "evidence": {
+    "hashInputs": true,
+    "hashOutputs": true,
+    "writeProcessingReport": true,
+    "writeQaReport": true
+  }
+}

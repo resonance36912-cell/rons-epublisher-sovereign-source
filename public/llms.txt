@@ -1,0 +1,17 @@
+# Resonance ePublisher
+
+> AI-powered platform that turns any topic into a researched, narrated AudioVisual eBook with cinematic visuals, voice narration, background music, and PDF / HTML / ePub export.
+
+Resonance ePublisher helps creators, educators, and businesses transform ideas, scripts, or recordings into fully illustrated and narrated eBooks. The platform combines AI research, storyboard generation, image creation, voice narration, and multi-format export in a single workflow.
+
+## Pages
+
+- [Home](/): Product overview, walkthrough video, features, and beta signup.
+- [About](/about): How the platform works — research, storyboard, visual book, narration, and export workflow.
+- [Pricing](/pricing): Free, Standard, Premium, and Ultimate plans in ZAR.
+- [Contact](/contact): WhatsApp, email, and phone support based in Cape Town, South Africa.
+
+## Optional
+
+- [Terms of Service](/terms)
+- [Privacy Policy](/privacy)

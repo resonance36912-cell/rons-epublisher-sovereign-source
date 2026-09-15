@@ -1,0 +1,13 @@
+{
+  "candidateVersion": "1.2-candidate",
+  "assignments": [
+    {"checkId":"ratings","fixtureVersion":"v1.2-ratings-1","owner":""},
+    {"checkId":"review-blocks","fixtureVersion":"v1.2-review-blocks-1","owner":""},
+    {"checkId":"failure-controls","fixtureVersion":"v1.2-failure-controls-1","owner":""},
+    {"checkId":"repair-accounting","fixtureVersion":"v1.2-repair-accounting-1","owner":""},
+    {"checkId":"dependency-invalidation","fixtureVersion":"v1.2-dependency-1","owner":""},
+    {"checkId":"release-package","fixtureVersion":"v1.2-release-package-1","owner":""},
+    {"checkId":"promotion-separation","fixtureVersion":"v1.2-promotion-1","owner":""}
+  ],
+  "note": "Owner fields must be completed by the protocol owner before execution."
+}

@@ -1,0 +1,19 @@
+{
+  "status": "BLOCKED_PENDING_HUMAN_DECISIONS",
+  "protocolVersion": "1.1-candidate",
+  "reviewerIds": ["", "", ""],
+  "adjudicator": "",
+  "approvalAuthority": "",
+  "ownerSignatureName": "",
+  "comparatorName": "",
+  "comparatorPlan": "",
+  "correctionAllowanceMinutes": null,
+  "spendingCeiling": null,
+  "minimumMeaningfulImprovement": "",
+  "requiredDeliverables": [],
+  "benchmarkApprover": "",
+  "authorizeLiveSmoke": false,
+  "liveSmokeProvider": "",
+  "liveSmokeSpendingCap": null,
+  "notes": "Completing this file is not itself a signature or authorization. Values must be copied into the canonical freeze/plan/authorization records and revalidated."
+}

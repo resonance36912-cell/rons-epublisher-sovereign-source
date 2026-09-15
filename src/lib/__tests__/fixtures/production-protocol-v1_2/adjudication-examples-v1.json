@@ -1,0 +1,14 @@
+{
+  "twoPointSpread": {
+    "dimension": "facts",
+    "ratings": [5, 3, 4],
+    "expected": "BLOCKED until documented adjudication"
+  },
+  "singleReviewerCritical": {
+    "dimension": "facts",
+    "ratings": [5, 5, 5],
+    "criticalFinding": "Unsupported biographical claim",
+    "raisedBy": "reviewer-2",
+    "expected": "BLOCKED until resolved or dismissed with evidence"
+  }
+}

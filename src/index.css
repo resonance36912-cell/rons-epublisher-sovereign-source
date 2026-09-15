@@ -1,0 +1,264 @@
+﻿@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Resonance brand spine â€” see docs/branding/BRAND_GUIDELINES.md */
+    --background: 222 47% 6%;
+    --foreground: 0 0% 98%;
+
+    --card: 222 47% 9%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 222 47% 9%;
+    --popover-foreground: 0 0% 98%;
+
+    /* Magenta primary (Resonance ePublisher â€” Intelligence/IQ accent) */
+    --primary: 295 90% 60%;
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 325 90% 65%;
+
+    --secondary: 222 30% 14%;
+    --secondary-foreground: 0 0% 92%;
+
+    --muted: 222 30% 14%;
+    --muted-foreground: 0 0% 78%;
+
+    /* Violet/pink accent pair from brand gradient */
+    --accent: 265 85% 65%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 72% 55%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 0 0% 100% / 0.1;
+    --input: 222 30% 18%;
+    --ring: 295 90% 60%;
+
+    --radius: 0.875rem;
+
+    --glass: 222 47% 9%;
+    --glass-border: 0 0% 100% / 0.08;
+    --glow-primary: 295 90% 60%;
+    --glow-accent: 325 90% 65%;
+
+    --shadow-elegant: 0 10px 30px -10px hsl(295 90% 60% / 0.3);
+    --shadow-glow: 0 0 40px -5px hsl(295 90% 60% / 0.8);
+
+    --sidebar-background: 222 47% 6%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 295 90% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 222 30% 14%;
+    --sidebar-accent-foreground: 0 0% 92%;
+    --sidebar-border: 0 0% 100% / 0.08;
+    --sidebar-ring: 295 90% 60%;
+
+    --font-display: 'Inter Tight', 'Space Grotesk', system-ui, sans-serif;
+    --font-body: 'Inter', system-ui, sans-serif;
+    --font-accent: 'Instrument Serif', 'Times New Roman', serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+
+  .accent-italic { font-family: var(--font-accent); font-style: italic; font-weight: 400; }
+  .label-mono { font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.2em; font-size: 0.625rem; }
+
+  .light {
+    --background: 0 0% 98%;
+    --foreground: 222 47% 8%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 8%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 8%;
+
+    --primary: 295 80% 48%;
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 325 80% 55%;
+
+    --secondary: 222 20% 94%;
+    --secondary-foreground: 222 40% 20%;
+
+    --muted: 222 20% 94%;
+    --muted-foreground: 222 25% 30%;
+
+    --accent: 265 75% 55%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 72% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 222 16% 88%;
+    --input: 222 16% 88%;
+    --ring: 295 80% 48%;
+
+    --glass: 0 0% 100%;
+    --glass-border: 222 16% 90%;
+    --glow-primary: 295 80% 48%;
+    --glow-accent: 325 80% 55%;
+
+    --shadow-elegant: 0 10px 30px -10px hsl(295 80% 48% / 0.25);
+    --shadow-glow: 0 0 40px -5px hsl(295 80% 48% / 0.6);
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 222 47% 8%;
+    --sidebar-primary: 295 80% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 222 20% 94%;
+    --sidebar-accent-foreground: 222 40% 20%;
+    --sidebar-border: 222 16% 88%;
+    --sidebar-ring: 295 80% 48%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html, body {
+    overflow-x: hidden;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: var(--font-body);
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+  }
+}
+
+@layer utilities {
+  .glass-card {
+    @apply bg-card/70 backdrop-blur-xl border border-glass-border rounded-xl;
+    box-shadow: 0 1px 3px 0 hsl(0 0% 0% / 0.3), 0 1px 2px -1px hsl(0 0% 0% / 0.2);
+  }
+
+  .glow-primary {
+    box-shadow: 0 0 20px -5px hsl(var(--glow-primary) / 0.25),
+                0 0 40px -10px hsl(var(--glow-primary) / 0.1);
+  }
+
+  .glow-accent {
+    box-shadow: 0 0 20px -5px hsl(var(--glow-accent) / 0.25),
+                0 0 40px -10px hsl(var(--glow-accent) / 0.1);
+  }
+
+  .gradient-primary,
+  .bg-gradient-brand {
+    background: linear-gradient(135deg, hsl(265 85% 65%), hsl(295 90% 60%), hsl(325 90% 65%));
+  }
+
+  .gradient-text {
+    background: linear-gradient(135deg, hsl(265 85% 65%), hsl(295 90% 60%), hsl(325 90% 65%));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .shadow-brand-glow {
+    box-shadow: 0 0 40px -5px hsl(295 90% 60% / 0.5);
+  }
+
+  .neon-border {
+    border: 1px solid hsl(var(--primary) / 0.2);
+    box-shadow: inset 0 0 12px -8px hsl(var(--primary) / 0.08);
+  }
+
+  .slide-card {
+    @apply bg-card/70 backdrop-blur-xl border border-glass-border rounded-xl transition-shadow duration-200;
+  }
+  .slide-card:hover {
+    box-shadow: 0 0 20px -5px hsl(var(--glow-primary) / 0.2);
+  }
+}
+
+@layer utilities {
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* RTL support for Arabic */
+[dir="rtl"] {
+  direction: rtl;
+  text-align: right;
+}
+
+[dir="rtl"] .flex {
+  /* Tailwind flex-row auto-mirrors in RTL via logical properties */
+}
+
+[dir="rtl"] .gradient-text {
+  direction: rtl;
+}
+
+/* Flip icons that imply directionality */
+[dir="rtl"] .lucide-arrow-right,
+[dir="rtl"] .lucide-chevron-right {
+  transform: scaleX(-1);
+}
+
+[dir="rtl"] .lucide-arrow-left,
+[dir="rtl"] .lucide-chevron-left {
+  transform: scaleX(-1);
+}
+
+/* Ensure proper spacing in RTL */
+[dir="rtl"] .space-x-1 > :not([hidden]) ~ :not([hidden]),
+[dir="rtl"] .space-x-2 > :not([hidden]) ~ :not([hidden]),
+[dir="rtl"] .space-x-3 > :not([hidden]) ~ :not([hidden]),
+[dir="rtl"] .space-x-4 > :not([hidden]) ~ :not([hidden]) {
+  --tw-space-x-reverse: 1;
+}
+
+[dir="rtl"] .gap-1\.5,
+[dir="rtl"] .gap-2,
+[dir="rtl"] .gap-3 {
+  /* gap works bidirectionally by default */
+}
+
+/* Audio waveform bars animation */
+@keyframes waveform-bar-1 { 0%, 100% { height: 20%; } 50% { height: 80%; } }
+@keyframes waveform-bar-2 { 0%, 100% { height: 60%; } 50% { height: 30%; } }
+@keyframes waveform-bar-3 { 0%, 100% { height: 40%; } 50% { height: 90%; } }
+@keyframes waveform-bar-4 { 0%, 100% { height: 70%; } 50% { height: 20%; } }
+
+.waveform-bar {
+  @apply inline-block w-[2px] rounded-full bg-current;
+}
+.waveform-bar:nth-child(1) { animation: waveform-bar-1 0.8s ease-in-out infinite; }
+.waveform-bar:nth-child(2) { animation: waveform-bar-2 0.6s ease-in-out infinite 0.1s; }
+.waveform-bar:nth-child(3) { animation: waveform-bar-3 0.7s ease-in-out infinite 0.2s; }
+.waveform-bar:nth-child(4) { animation: waveform-bar-4 0.5s ease-in-out infinite 0.15s; }
+
+/* Glow pulse for playing chapter card */
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 8px hsl(var(--primary) / 0.3); }
+  50% { box-shadow: 0 0 20px hsl(var(--primary) / 0.6); }
+}
+@keyframes glow-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.animate-glow-pulse {
+  animation: glow-fade-in 0.4s ease-out, glow-pulse 2s ease-in-out 0.4s infinite;
+}
+
+/* Hide scrollbar but keep scrolling */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+

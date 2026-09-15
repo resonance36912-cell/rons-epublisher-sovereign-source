@@ -1,0 +1,9 @@
+{
+  "authorized": false,
+  "authorizer": "",
+  "authorizedAt": "",
+  "provider": "",
+  "spendingCap": null,
+  "purpose": "Separately capped live smoke test after mocked dry run",
+  "note": "No paid or external provider work may be dispatched while authorized is false."
+}

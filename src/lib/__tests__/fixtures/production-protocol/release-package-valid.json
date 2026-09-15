@@ -1,0 +1,24 @@
+{
+  "releaseId":"dry-run-20260912-001",
+  "protocolVersion":"1.0-candidate",
+  "rubricVersion":"1.0-candidate",
+  "buildId":"local-build-dry-run",
+  "modelId":"local-deterministic",
+  "promptId":"none-local-deterministic",
+  "configurationId":"six-page-biography-dry-run",
+  "contentAssetHashes":{"book.json":"sha256-placeholder"},
+  "claimLedgerSnapshotId":"claim-ledger-dry-run",
+  "sourceSnapshotIds":["source-snapshot-dry-run"],
+  "reviewerSubmissions":[
+    {"reviewerId":"reviewer-a","ratings":{"facts":5,"prose":5,"visual":4,"layout":4}},
+    {"reviewerId":"reviewer-b","ratings":{"facts":5,"prose":5,"visual":4,"layout":4}},
+    {"reviewerId":"reviewer-c","ratings":{"facts":4,"prose":5,"visual":5,"layout":5}}
+  ],
+  "defectLogId":"defect-log-dry-run",
+  "regressionResultsId":"regression-dry-run",
+  "exportValidationResultsId":"export-validation-dry-run",
+  "providerSpend":0,
+  "humanReviewMinutes":18,
+  "correctionMinutes":0,
+  "approvals":[{"role":"editorial","name":"Pilot editor","timestamp":"2026-09-12T01:45:00+02:00"}]
+}

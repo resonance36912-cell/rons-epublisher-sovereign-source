@@ -1,0 +1,218 @@
+// Resonance ePublisher — Sovereign Local compatibility client.
+// No hosted Supabase project is contacted by this build.
+
+const LOCAL_USER_ID = "resonance-epublisher-local-user";
+const LOCAL_USER: any = {
+  id: LOCAL_USER_ID,
+  email: "local@resonance.invalid",
+  email_confirmed_at: new Date(0).toISOString(),
+  confirmed_at: new Date(0).toISOString(),
+  last_sign_in_at: new Date().toISOString(),
+  app_metadata: { provider: "local", providers: ["local"] },
+  user_metadata: { name: "Sovereign Local User", display_name: "Sovereign Local User" },
+  identities: [{ id: "local", provider: "local", identity_data: { email: "local@resonance.invalid" } }],
+};
+const LOCAL_SESSION: any = {
+  access_token: "resonance-sovereign-local-token",
+  refresh_token: "resonance-sovereign-local-refresh",
+  token_type: "bearer",
+  expires_in: 315360000,
+  expires_at: Math.floor(Date.now() / 1000) + 315360000,
+  user: LOCAL_USER,
+};
+
+type LocalResult = { data: any; error: any; count?: number | null; status?: number; statusText?: string };
+type Filter = { key: string; op: string; value: any };
+const TABLE_PREFIX = "resonance:epublisher:table:";
+const AUTH_KEY = "resonance:epublisher:local-auth";
+function makeId() { return globalThis.crypto?.randomUUID?.() ?? `local-${Date.now()}-${Math.random().toString(16).slice(2)}`; }
+function nowIso() { return new Date().toISOString(); }
+function signedIn() { try { return localStorage.getItem(AUTH_KEY) !== "signed-out"; } catch { return true; } }
+function setSignedIn(v: boolean) { try { localStorage.setItem(AUTH_KEY, v ? "signed-in" : "signed-out"); } catch {} }
+function keyForTable(table: string) { return TABLE_PREFIX + table; }
+function seedRows(table: string): any[] {
+  if (table === "profiles") return [{ id: "local-profile", user_id: LOCAL_USER_ID, display_name: "Sovereign Local User", avatar_url: "", created_at: nowIso(), updated_at: nowIso() }];
+  if (table === "user_roles") return [{ id: "local-admin", user_id: LOCAL_USER_ID, role: "admin", created_at: nowIso() }];
+  return [];
+}
+export function readLocalRows(table: string): any[] {
+  try {
+    const raw = localStorage.getItem(keyForTable(table));
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return seedRows(table);
+}
+export function writeLocalRows(table: string, rows: any[]) { try { localStorage.setItem(keyForTable(table), JSON.stringify(rows)); } catch {} }
+function cmp(a: any, b: any) { if (a == null && b == null) return 0; return String(a ?? "").localeCompare(String(b ?? ""), undefined, { numeric: true }); }
+function like(value: any, pattern: any, ci=false) {
+  let a=String(value ?? ""), p=String(pattern ?? ""); if (ci) { a=a.toLowerCase(); p=p.toLowerCase(); }
+  const re=new RegExp("^"+p.split("%").map(x=>x.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")).join(".*")+"$"); return re.test(a);
+}
+function project(row: any, columns: string) {
+  if (!columns || columns.trim()==="*" || columns.includes("(") || columns.includes("!")) return row;
+  const out:any={};
+  for (const raw of columns.split(",")) { const key=raw.trim().split(/\s+/)[0]; if (key && key in row) out[key]=row[key]; }
+  return Object.keys(out).length ? out : row;
+}
+
+class LocalQuery implements PromiseLike<LocalResult> {
+  private op: "select"|"insert"|"upsert"|"update"|"delete" = "select";
+  private payload: any = null;
+  private filters: Filter[] = [];
+  private singleMode: "none"|"single"|"maybe" = "none";
+  private orderSpec: { key: string; ascending: boolean } | null = null;
+  private limitCount: number | null = null;
+  private rangeSpec: [number,number] | null = null;
+  private selectColumns = "*";
+  private selectOpts: any = null;
+  private onConflict: string | null = null;
+  constructor(private table: string) {}
+  select(columns="*", opts?: any) { this.selectColumns=columns; this.selectOpts=opts ?? null; return this; }
+  insert(payload:any, _opts?:any) { this.op="insert"; this.payload=payload; return this; }
+  upsert(payload:any, opts?:any) { this.op="upsert"; this.payload=payload; this.onConflict=opts?.onConflict ?? null; return this; }
+  update(payload:any, _opts?:any) { this.op="update"; this.payload=payload; return this; }
+  delete(_opts?:any) { this.op="delete"; return this; }
+  eq(key:string,value:any){ this.filters.push({key,op:"eq",value}); return this; }
+  neq(key:string,value:any){ this.filters.push({key,op:"neq",value}); return this; }
+  gt(key:string,value:any){ this.filters.push({key,op:"gt",value}); return this; }
+  gte(key:string,value:any){ this.filters.push({key,op:"gte",value}); return this; }
+  lt(key:string,value:any){ this.filters.push({key,op:"lt",value}); return this; }
+  lte(key:string,value:any){ this.filters.push({key,op:"lte",value}); return this; }
+  is(key:string,value:any){ this.filters.push({key,op:"is",value}); return this; }
+  in(key:string,value:any[]){ this.filters.push({key,op:"in",value}); return this; }
+  not(key:string,operator:string,value:any){ this.filters.push({key,op:`not:${operator}`,value}); return this; }
+  like(key:string,value:any){ this.filters.push({key,op:"like",value}); return this; }
+  ilike(key:string,value:any){ this.filters.push({key,op:"ilike",value}); return this; }
+  contains(key:string,value:any){ this.filters.push({key,op:"contains",value}); return this; }
+  overlaps(key:string,value:any){ this.filters.push({key,op:"overlaps",value}); return this; }
+  match(values:Record<string,any>){ Object.entries(values||{}).forEach(([k,v])=>this.eq(k,v)); return this; }
+  filter(key:string,operator:string,value:any){ this.filters.push({key,op:operator,value}); return this; }
+  or(expr:string){ this.filters.push({key:"__or__",op:"or",value:expr}); return this; }
+  order(key:string,opts?:any){ this.orderSpec={key,ascending:opts?.ascending!==false}; return this; }
+  limit(n:number){ this.limitCount=n; return this; }
+  range(from:number,to:number){ this.rangeSpec=[from,to]; return this; }
+  single(){ this.singleMode="single"; return this; }
+  maybeSingle(){ this.singleMode="maybe"; return this; }
+  abortSignal(_signal:AbortSignal){ return this; }
+  returns(){ return this; }
+  private basic(row:any,f:Filter):boolean {
+    const v=row?.[f.key];
+    switch(f.op){
+      case "eq": return v===f.value;
+      case "neq": return v!==f.value;
+      case "gt": return v>f.value;
+      case "gte": return v>=f.value;
+      case "lt": return v<f.value;
+      case "lte": return v<=f.value;
+      case "is": return f.value===null ? v==null : v===f.value;
+      case "in": return Array.isArray(f.value) && f.value.includes(v);
+      case "like": return like(v,f.value,false);
+      case "ilike": return like(v,f.value,true);
+      case "contains": return Array.isArray(v) ? (Array.isArray(f.value)?f.value.every((x:any)=>v.includes(x)):v.includes(f.value)) : typeof v==="object" && typeof f.value==="object" ? Object.entries(f.value).every(([k,x])=>v?.[k]===x) : false;
+      case "overlaps": return Array.isArray(v) && Array.isArray(f.value) && f.value.some((x:any)=>v.includes(x));
+      case "not:is": return f.value===null ? v!=null : v!==f.value;
+      case "not:eq": return v!==f.value;
+      default: return true;
+    }
+  }
+  private matches(row:any){
+    for(const f of this.filters){
+      if(f.op!=="or" && !this.basic(row,f)) return false;
+      if(f.op==="or"){
+        const parts=String(f.value).split(","); let ok=false;
+        for(const part of parts){ const m=/^([^.]+)\.(eq|gt|gte|lt|lte|is)\.(.*)$/.exec(part.trim()); if(!m) continue; let val:any=m[3]==="null"?null:m[3]; if(this.basic(row,{key:m[1],op:m[2],value:val})){ok=true;break;} }
+        if(!ok) return false;
+      }
+    }
+    return true;
+  }
+  private async resolve():Promise<LocalResult>{
+    let rows=readLocalRows(this.table); const matched=rows.filter(r=>this.matches(r)); let data:any=null;
+    if(this.op==="select"){
+      let out=[...matched]; if(this.orderSpec){const {key,ascending}=this.orderSpec;out.sort((a,b)=>cmp(a?.[key],b?.[key])*(ascending?1:-1));}
+      if(this.rangeSpec) out=out.slice(this.rangeSpec[0],this.rangeSpec[1]+1); if(this.limitCount!=null) out=out.slice(0,this.limitCount);
+      const count=out.length; const projected=out.map(r=>project(r,this.selectColumns)); data=this.selectOpts?.head?null:(this.singleMode==="none"?projected:(projected[0]??null)); return {data,error:null,count:this.selectOpts?.count?count:null,status:200,statusText:"OK"};
+    }
+    if(this.op==="insert"){
+      const incoming=Array.isArray(this.payload)?this.payload:[this.payload]; const created=incoming.map((r:any)=>({id:r?.id??makeId(),user_id:r?.user_id??LOCAL_USER_ID,created_at:r?.created_at??nowIso(),updated_at:r?.updated_at??nowIso(),...r})); rows.push(...created); writeLocalRows(this.table,rows); data=this.singleMode==="none"?created:(created[0]??null);
+    } else if(this.op==="upsert"){
+      const incoming=Array.isArray(this.payload)?this.payload:[this.payload]; const out:any[]=[]; const keys=(this.onConflict||"id").split(",").map(x=>x.trim()).filter(Boolean);
+      for(const r of incoming){const idx=rows.findIndex(x=>keys.every(k=>r?.[k]!=null && x?.[k]===r[k])); if(idx>=0){rows[idx]={...rows[idx],...r,updated_at:nowIso()};out.push(rows[idx]);}else{const c={id:r?.id??makeId(),user_id:r?.user_id??LOCAL_USER_ID,created_at:r?.created_at??nowIso(),updated_at:nowIso(),...r};rows.push(c);out.push(c);}} writeLocalRows(this.table,rows); data=this.singleMode==="none"?out:(out[0]??null);
+    } else if(this.op==="update"){
+      const out:any[]=[]; rows=rows.map(r=>this.matches(r)?(out.push({...r,...this.payload,updated_at:nowIso()}),out[out.length-1]):r); writeLocalRows(this.table,rows); data=this.singleMode==="none"?out:(out[0]??null);
+    } else if(this.op==="delete") { rows=rows.filter(r=>!this.matches(r)); writeLocalRows(this.table,rows); data=null; }
+    return {data,error:null,count:Array.isArray(data)?data.length:(data?1:0),status:200,statusText:"OK"};
+  }
+  then<TResult1=LocalResult,TResult2=never>(onfulfilled?:((value:LocalResult)=>TResult1|PromiseLike<TResult1>)|null,onrejected?:((reason:any)=>TResult2|PromiseLike<TResult2>)|null):PromiseLike<TResult1|TResult2>{return this.resolve().then(onfulfilled??undefined,onrejected??undefined);}
+}
+
+const authListeners=new Set<(event:string,session:any)=>void>();
+function emit(event:string){const s=signedIn()?LOCAL_SESSION:null; for(const cb of authListeners){try{cb(event,s)}catch{}}}
+const auth={
+  async getSession(){return {data:{session:signedIn()?LOCAL_SESSION:null},error:null};},
+  async getUser(){return {data:{user:signedIn()?LOCAL_USER:null},error:null};},
+  async refreshSession(){return {data:{session:signedIn()?LOCAL_SESSION:null,user:signedIn()?LOCAL_USER:null},error:null};},
+  onAuthStateChange(cb:(event:string,session:any)=>void){authListeners.add(cb);queueMicrotask(()=>cb("INITIAL_SESSION",signedIn()?LOCAL_SESSION:null));return {data:{subscription:{unsubscribe:()=>authListeners.delete(cb)}}};},
+  async signOut(_opts?:any){setSignedIn(false);emit("SIGNED_OUT");return {error:null};},
+  async signInWithPassword(_args:any){setSignedIn(true);emit("SIGNED_IN");return {data:{session:LOCAL_SESSION,user:LOCAL_USER},error:null};},
+  async signUp(_args:any){setSignedIn(true);emit("SIGNED_IN");return {data:{session:LOCAL_SESSION,user:LOCAL_USER},error:null};},
+  async signInWithOtp(_args:any){setSignedIn(true);emit("SIGNED_IN");return {data:{session:LOCAL_SESSION,user:LOCAL_USER},error:null};},
+  async verifyOtp(_args:any){setSignedIn(true);emit("SIGNED_IN");return {data:{session:LOCAL_SESSION,user:LOCAL_USER},error:null};},
+  async signInWithOAuth(_args:any){setSignedIn(true);emit("SIGNED_IN");return {data:{provider:"local",url:null},error:null};},
+  async setSession(_tokens:any){setSignedIn(true);emit("SIGNED_IN");return {data:{session:LOCAL_SESSION,user:LOCAL_USER},error:null};},
+  async exchangeCodeForSession(_code:any){setSignedIn(true);emit("SIGNED_IN");return {data:{session:LOCAL_SESSION,user:LOCAL_USER},error:null};},
+  async updateUser(args:any){Object.assign(LOCAL_USER.user_metadata,args?.data||{});return {data:{user:LOCAL_USER},error:null};},
+  async resend(_args:any){return {data:{},error:null};},
+  async resetPasswordForEmail(_email:string,_opts?:any){return {data:{},error:null};},
+  async getUserIdentities(){return {data:{identities:LOCAL_USER.identities},error:null};},
+  async unlinkIdentity(_identity:any){return {data:{},error:null};},
+  async linkIdentity(_args:any){return {data:{provider:"local",url:null},error:null};},
+};
+
+const DB_NAME="resonance-epublisher-sovereign"; const STORE="files"; const urlCache=new Map<string,string>();
+function openDb():Promise<IDBDatabase>{return new Promise((resolve,reject)=>{const r=indexedDB.open(DB_NAME,1);r.onupgradeneeded=()=>{if(!r.result.objectStoreNames.contains(STORE))r.result.createObjectStore(STORE)};r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);});}
+async function filePut(key:string,blob:Blob){const db=await openDb();await new Promise<void>((resolve,reject)=>{const tx=db.transaction(STORE,"readwrite");tx.objectStore(STORE).put(blob,key);tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error)});db.close();}
+async function fileGet(key:string):Promise<Blob|null>{const db=await openDb();const v=await new Promise<any>((resolve,reject)=>{const tx=db.transaction(STORE,"readonly");const r=tx.objectStore(STORE).get(key);r.onsuccess=()=>resolve(r.result??null);r.onerror=()=>reject(r.error)});db.close();return v;}
+async function fileDelete(key:string){const db=await openDb();await new Promise<void>((resolve,reject)=>{const tx=db.transaction(STORE,"readwrite");tx.objectStore(STORE).delete(key);tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error)});db.close();}
+async function fileKeys(prefix:string):Promise<string[]>{const db=await openDb();const keys=await new Promise<string[]>((resolve,reject)=>{const tx=db.transaction(STORE,"readonly");const r=tx.objectStore(STORE).getAllKeys();r.onsuccess=()=>resolve((r.result||[]).map(String).filter(x=>x.startsWith(prefix)));r.onerror=()=>reject(r.error)});db.close();return keys;}
+async function objectUrl(key:string){const cached=urlCache.get(key);if(cached)return cached;const b=await fileGet(key);if(!b)return "";const u=URL.createObjectURL(b);urlCache.set(key,u);return u;}
+const storage={from(bucket:string){const prefix=`${bucket}/`;return {
+  async upload(path:string,file:Blob,_opts?:any){try{const key=prefix+path;await filePut(key,file);const old=urlCache.get(key);if(old)URL.revokeObjectURL(old);urlCache.set(key,URL.createObjectURL(file));return {data:{path,fullPath:key},error:null};}catch(e:any){return {data:null,error:e};}},
+  async download(path:string){try{return {data:await fileGet(prefix+path),error:null};}catch(e:any){return {data:null,error:e};}},
+  getPublicUrl(path:string){return {data:{publicUrl:urlCache.get(prefix+path)||`resonance-local://${encodeURIComponent(prefix+path)}`}};},
+  async createSignedUrl(path:string,_seconds:number,_opts?:any){return {data:{signedUrl:await objectUrl(prefix+path)},error:null};},
+  async createSignedUrls(paths:string[],_seconds:number,_opts?:any){return {data:await Promise.all(paths.map(async path=>({path,signedUrl:(await objectUrl(prefix+path))||null,error:null}))),error:null};},
+  async remove(paths:string[]){for(const p of paths){const key=prefix+p;const u=urlCache.get(key);if(u)URL.revokeObjectURL(u);urlCache.delete(key);await fileDelete(key);}return {data:paths.map(name=>({name})),error:null};},
+  async list(path="",_opts?:any){const keys=await fileKeys(prefix+path);return {data:keys.map(k=>({name:k.slice(prefix.length),id:k,metadata:{}})),error:null};},
+  async move(from:string,to:string){const b=await fileGet(prefix+from);if(!b)return {data:null,error:new Error("Local file not found")};await filePut(prefix+to,b);await fileDelete(prefix+from);return {data:{message:"ok"},error:null};},
+  async copy(from:string,to:string){const b=await fileGet(prefix+from);if(!b)return {data:null,error:new Error("Local file not found")};await filePut(prefix+to,b);return {data:{path:to},error:null};},
+};}};
+
+function svgData(title:string,subtitle="Sovereign Local"){const esc=(s:string)=>s.replace(/[&<>\"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"} as any)[c]);const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#090b1a"/><stop offset="1" stop-color="#25104a"/></linearGradient></defs><rect width="100%" height="100%" fill="url(#g)"/><circle cx="1060" cy="140" r="110" fill="#7c3aed" opacity=".32"/><text x="80" y="330" fill="white" font-family="Arial" font-size="56" font-weight="700">${esc(title.slice(0,34))}</text><text x="82" y="392" fill="#d8c8ff" font-family="Arial" font-size="28">${esc(subtitle.slice(0,60))}</text><text x="82" y="620" fill="#a78bfa" font-family="Arial" font-size="20">Resonance Open Nova · generated locally</text></svg>`;return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;}
+export async function invokeLocalFunction(name:string,body:any={}):Promise<any>{
+  if(name==="redeem-coupon"){const row={id:makeId(),user_id:LOCAL_USER_ID,code:String(body?.code||"SOVEREIGNLOCAL"),tier:"all_access",type:"tier",expires_at:null,created_at:nowIso()};const rows=readLocalRows("coupon_redemptions");rows.push(row);writeLocalRows("coupon_redemptions",rows);return {success:true,tier:"all_access",redemption:row};}
+  if(name==="generate-character-unified"){const d=body?.characterDetails||{};const nameText=String(d.name||d.character_name||"Resonance Character");const concept={label:"Sovereign Local",name:nameText,description:String(d.description||"A locally generated character concept for this ePublisher project."),outfit:String(d.outfit||"Signature contemporary styling"),vibe:String(d.vibe||body?.verification?.mood||"cinematic"),visual_prompt:`Cinematic portrait of ${nameText}, ${d.description||"expressive lead performer"}, sovereign local concept`,imageUrl:svgData(nameText,"Local character concept")};return {success:true,concept,hasImage:true,local:true};}
+  if(name==="generate-character-image"){return {success:true,imageUrl:svgData(String(body?.name||"Character"),"Local character image"),local:true};}
+  if(name==="delete-fal-asset") return {success:true,deleted:[],local:true};
+  if(name==="monitor-health") return {success:true,mode:"sovereign-local",providers:{local:"online",external:"denied"}};
+  if(name==="provider-balances") return {success:true,mode:"sovereign-local",providers:[],credits:0};
+  if(name==="scene-qa") return {success:true,passed:true,warnings:["Sovereign-local QA: provider-backed scoring not enabled."],local:true};
+  if(name==="normalize-scene-video") return {success:true,local:true,videoUrl:body?.video_url||body?.videoUrl||null};
+  if(name==="submit-crash-report") return {success:true,stored_local:true,id:makeId()};
+  if(name==="handle-email-unsubscribe") return {success:true,local:true};
+  if(name==="email-delivery-monitor") return {success:true,local:true,alerts:[]};
+  if(name==="merge-accounts") return {success:false,error:"Account merge is not required in sovereign-local mode.",local:true};
+  if(name==="verify-play-purchase") return {success:false,error:"External purchases are disabled in sovereign-local mode.",local:true};
+  if(name==="generate-optimization-suggestions") return {success:true,suggestions:[],local:true};
+  if(name==="apply-optimization-suggestion") return {success:true,applied:false,local:true};
+  if(name==="admin-render-job-action") return {success:true,local:true};
+  if(name==="send-transactional-email"||name==="send-report-email") return {success:false,error:"Email delivery is disabled in sovereign-local mode.",local:true};
+  if(name==="ocr-burned-lyrics") return {success:true,text:"",local:true};
+  if(name.includes("image")) return {success:true,imageUrl:svgData(String(body?.scene_number?`Scene ${body.scene_number}`:"Resonance ePublisher"),"Local placeholder image"),local:true};
+  if(name.includes("video")||name.includes("render")||name.includes("lipsync")||name==="check-job-status"||name==="submit-video-job"||name==="upscale-video") return {success:false,error:"Local video model execution is not wired in v0.1. External providers are denied by default.",local:true};
+  return {success:false,error:`${name} is not yet implemented in sovereign-local v0.1.`,local:true};
+}
+const functions={async invoke<T=any>(name:string,opts?:{body?:any;headers?:any}){try{return {data:(await invokeLocalFunction(name,opts?.body??{})) as T,error:null};}catch(e:any){return {data:null,error:e};}}};
+
+function channelFactory(name:string){const c:any={name,on:(..._args:any[])=>c,subscribe:(cb?:any)=>{queueMicrotask(()=>cb?.("SUBSCRIBED"));return c;},unsubscribe:async()=>"ok",track:async(_v:any)=>"ok",untrack:async()=>"ok",send:async(_v:any)=>"ok",presenceState:()=>({})};return c;}
+export const supabase: any={auth,storage,functions,from(table:string){return new LocalQuery(table);},async rpc(name:string,_args?:any,_opts?:any){if(name==="has_role")return {data:true,error:null};return {data:null,error:null};},channel(name:string,_opts?:any){return channelFactory(name);},async removeChannel(_c:any){return "ok";},getChannels(){return [];}};

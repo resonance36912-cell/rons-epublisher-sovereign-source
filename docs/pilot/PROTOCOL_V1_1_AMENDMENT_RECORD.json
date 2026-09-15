@@ -1,0 +1,16 @@
+{
+  "amendmentId": "PP-V1.1-A001",
+  "priorVersion": "1.0-candidate",
+  "newVersion": "1.1-candidate",
+  "changedFields": [
+    "mandatory signed freeze record",
+    "fixture inventory gate",
+    "mocked failure-injection dry run",
+    "PASS/FAIL/BLOCKED exit records",
+    "named benchmark authorization gate",
+    "live smoke authorization separation"
+  ],
+  "measurementImpactAssessment": "The sealed v1.0 evidence remains historical. It does not authorize v1.1 execution or benchmarking. All v1.1 measurement checks were rerun with mocked faults; v1.1 remains BLOCKED until the freeze record is completed and signed.",
+  "owner": "implementation record - protocol owner confirmation pending",
+  "timestamp": "2026-09-12T06:00:00+02:00"
+}

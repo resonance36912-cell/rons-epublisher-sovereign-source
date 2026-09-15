@@ -1,0 +1,15 @@
+{
+  "definitions": [
+    {"id":"facts","label":"Factual support","weight":25},
+    {"id":"prose","label":"Prose quality","weight":25},
+    {"id":"visual","label":"Visual quality","weight":25},
+    {"id":"layout","label":"Layout quality","weight":25}
+  ],
+  "submissions": [
+    {"reviewerId":"reviewer-a","ratings":{"facts":5,"prose":5,"visual":4,"layout":4}},
+    {"reviewerId":"reviewer-b","ratings":{"facts":5,"prose":5,"visual":4,"layout":4}},
+    {"reviewerId":"reviewer-c","ratings":{"facts":5,"prose":5,"visual":4,"layout":4},"criticalFindings":[{"id":"claim-1","description":"Unsupported biographical claim","disposition":"unresolved"}]}
+  ],
+  "mandatoryChecks": [{"id":"fact-ledger","label":"Fact ledger approved","passed":true}],
+  "editorialApproval":"Pilot editor"
+}

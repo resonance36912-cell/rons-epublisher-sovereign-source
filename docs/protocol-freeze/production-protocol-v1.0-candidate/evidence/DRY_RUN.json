@@ -1,0 +1,43 @@
+{
+  "protocol": "Production Protocol v1.0 — Candidate",
+  "dryRunType": "synthetic calibration and measurement-process dry run",
+  "timestamp": "2026-09-11T23:51:38.735Z",
+  "measurementProcessPassed": true,
+  "checks": {
+    "cleanMedianScoreIs90": true,
+    "cleanFixturePasses": true,
+    "disagreementBlocksWithoutAdjudication": true,
+    "disagreementPassesWithAdjudication": true,
+    "unresolvedCriticalFindingBlocks": true,
+    "releasePackageIsComplete": true,
+    "allFailureClassesDefined": true,
+    "competitiveClaimRemainsBlocked": true
+  },
+  "cleanMedianRatings": [
+    {
+      "id": "facts",
+      "rating": 5
+    },
+    {
+      "id": "prose",
+      "rating": 5
+    },
+    {
+      "id": "visual",
+      "rating": 4
+    },
+    {
+      "id": "layout",
+      "rating": 4
+    }
+  ],
+  "cleanScore": 90,
+  "adjudicationBlockers": [
+    "Reviewer disagreement for visual requires documented adjudication."
+  ],
+  "criticalBlockers": [
+    "Critical defect: Reviewer reviewer-c: Unsupported biographical claim"
+  ],
+  "competitiveClaimAllowed": false,
+  "note": "This dry run is not production validation, software approval, protocol validation, or competitive evidence."
+}

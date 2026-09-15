@@ -1,0 +1,6 @@
+{
+  "source": {"change": "replace supporting source snapshot", "expectedInvalidations": ["facts", "prose"]},
+  "prose": {"change": "edit approved paragraph", "expectedInvalidations": ["facts", "text-image", "narration", "layout"]},
+  "image": {"change": "replace approved page image", "expectedInvalidations": ["text-image", "layout"]},
+  "export-config": {"change": "change export configuration", "expectedInvalidations": ["exports"]}
+}

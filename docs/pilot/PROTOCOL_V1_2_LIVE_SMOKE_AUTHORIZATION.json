@@ -1,0 +1,11 @@
+{
+  "authorized": false,
+  "frozenSpecificationId": "",
+  "configurationId": "",
+  "authorizer": "",
+  "authorizedAt": "",
+  "provider": "",
+  "spendingCap": null,
+  "purpose": "Separately capped live smoke test for mandatory checks not satisfied by simulation",
+  "notes": "No external provider call or spend is permitted while authorized is false."
+}

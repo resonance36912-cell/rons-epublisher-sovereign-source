@@ -1,0 +1,38 @@
+{
+  "fixtureSetVersion": "v1.2-f1",
+  "scoringExampleSetId": "v1.2-c1",
+  "scoringExampleIds": [
+    "rating-levels-v1"
+  ],
+  "adjudicationExampleIds": [
+    "two-point-spread-v1",
+    "single-reviewer-critical-v1"
+  ],
+  "failureFixtureKinds": [
+    "invalid-structure",
+    "unsupported-factual-claim",
+    "unintended-access",
+    "lost-edits-or-corrupt-assets",
+    "provider-interruption",
+    "spending-limit-reached",
+    "repair-limit-exhausted"
+  ],
+  "dependencyFixtureChanges": [
+    "source",
+    "prose",
+    "image",
+    "export-config"
+  ],
+  "measurementFixtureIds": [
+    "measurement-accounting-v1"
+  ],
+  "calibrationFixtureIds": [
+    "rating-levels-v1",
+    "two-point-spread-v1",
+    "single-reviewer-critical-v1",
+    "measurement-accounting-v1"
+  ],
+  "unseenConfirmationBriefIds": [
+    "reserved-confirmation-brief-set-v1"
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "protocolVersion": "1.2-candidate",
+  "rubricVersion": "v1.2-r1",
+  "fixtureSetVersion": "v1.2-f1",
+  "analysisPlanVersion": "v1.2-a1",
+  "scope": "six-page illustrated-biography controlled pilot",
+  "exclusions": [
+    "long-form fiction",
+    "other languages",
+    "print editions"
+  ],
+  "releaseGates": [
+    "book release",
+    "software release",
+    "protocol validation"
+  ],
+  "scoringExampleSetId": "v1.2-c1",
+  "reviewerIds": [],
+  "adjudicator": "",
+  "approvalAuthority": "",
+  "comparatorName": "",
+  "comparatorPlan": "",
+  "correctionAllowanceMinutes": null,
+  "spendingCeiling": null,
+  "stoppingRule": "Run every preregistered benchmark job with no optional stopping for observed performance; stop only for a mandatory safety/access-control/data-preservation failure or before the approved spending ceiling would be exceeded.",
+  "immutableIdentifier": "",
+  "ownerSignatureName": "",
+  "ownerSignedAt": "",
+  "immutableManifestPath": "docs/pilot/PROTOCOL_V1_2_SPEC_MANIFEST.json"
+}

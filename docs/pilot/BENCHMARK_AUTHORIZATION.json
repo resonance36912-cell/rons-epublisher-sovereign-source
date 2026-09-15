@@ -1,0 +1,7 @@
+{
+  "authorized": false,
+  "approver": "",
+  "approvedAt": "",
+  "scope": "six-page illustrated-biography competitive benchmark",
+  "notes": "Authorization must remain false until freeze, fixture, competitive-plan, and measurement gates pass."
+}

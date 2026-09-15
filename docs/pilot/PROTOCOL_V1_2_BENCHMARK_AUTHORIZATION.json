@@ -1,0 +1,11 @@
+{
+  "authorized": false,
+  "frozenSpecificationId": "",
+  "configurationId": "",
+  "dryRunEvidencePackageId": "",
+  "benchmarkScope": "six-page illustrated-biography competitive benchmark",
+  "spendingCeiling": null,
+  "approver": "",
+  "approvedAt": "",
+  "notes": "Authorization applies only to the exact frozen specification, configuration, and passing dry-run evidence package named here."
+}

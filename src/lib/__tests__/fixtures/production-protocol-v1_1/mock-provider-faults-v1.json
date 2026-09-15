@@ -1,0 +1,6 @@
+{
+  "timeout-after-dispatch": {"providerStatus": "unknown", "retryAllowed": false, "requires": ["status reconciliation", "duplicate-prevention check"]},
+  "completed-but-client-timed-out": {"providerStatus": "completed", "retryAllowed": false, "requires": ["reuse confirmed result"]},
+  "failed-before-charge": {"providerStatus": "failed", "committedCharge": 0, "retryAllowed": true},
+  "spend-ceiling-hit": {"providerStatus": "not-dispatched", "retryAllowed": false, "requires": ["explicit increased-budget authorization"]}
+}
