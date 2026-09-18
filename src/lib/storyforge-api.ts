@@ -19,6 +19,7 @@ import { recordAiAttempt, extractStatusCode } from "@/lib/ai-attempt-log";
 import { OPEN_NOVA_LOCAL_ONLY } from "@/lib/sovereign-mode";
 import { getFreeCloudQualityEnabled, parseHybridJson, requestHybridText } from "@/lib/free-cloud-quality";
 import { qualifyDiscoverySources } from "@/lib/research-source-quality";
+import { getImageMode } from "@/lib/cost-mode";
 
 const OPEN_NOVA_RESEARCH_BASE_URL = String(
   import.meta.env.VITE_OPEN_NOVA_RESEARCH_URL || "/open-nova-research",
@@ -826,7 +827,6 @@ export async function generateChapterImage(
   assertMaxLength("additionalInstruction", additionalInstruction, AI_INPUT_LIMITS.imageInstruction);
   assertMaxLength("refCharacterDetails", refCharacterDetails?.details, AI_INPUT_LIMITS.imageCharacter);
   const FALLBACK_IMAGE = `${window.location.origin}/fallback-chapter.png`;
-  const { getImageMode } = await import("./cost-mode");
   const mode = modeOverride ?? getImageMode();
 
   // Premium mode: confirm overage charge if the user has exceeded their daily

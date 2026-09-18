@@ -2,7 +2,6 @@
 // AudioVisual eBook preview. Text-only at the StoryPreview stage (chapter
 // images are produced in the Visual Book step), one chapter per slide plus
 // title + references slides.
-import jsPDF from "jspdf";
 import type { SlideChapter, Source } from "@/components/storyforge/StoryForgeContext";
 import { getBrandLogoDataUrl, BRAND_NAME, BRAND_URL } from "@/lib/brand-asset";
 
@@ -40,6 +39,7 @@ function safeFilename(title: string): string {
 /* ───────────────────── PDF (landscape A4) ───────────────────── */
 
 export async function exportStoryPreviewPdf(deck: PresentationDeck, prefs: FormatPrefs = DEFAULT_FORMAT_PREFS) {
+  const { default: jsPDF } = await import("jspdf");
   const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
   const W = doc.internal.pageSize.getWidth();
   const H = doc.internal.pageSize.getHeight();

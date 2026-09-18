@@ -11,7 +11,14 @@ import { saveProject } from "@/lib/project-storage";
 import { notifyProjectSaveError } from "@/lib/notifyProjectSaveError";
 import { prepareExportImages } from "@/lib/export-image-utils";
 import { mapWithConcurrencyLimit } from "@/lib/async-utils";
-import { CURRENT_SCHEMA_VERSION, SCHEMA_PREFIX } from "@/lib/storyboard-import";
+import {
+  CURRENT_SCHEMA_VERSION,
+  SCHEMA_PREFIX,
+  StoryboardImportError,
+  getSchemaChangelog,
+  parseStoryboardJson,
+  type NormalizedImport,
+} from "@/lib/storyboard-import";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -22,7 +29,6 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { getSchemaChangelog, type NormalizedImport } from "@/lib/storyboard-import";
 import { readStrictSchemaPref, writeStrictSchemaPref, isImportBlocked } from "@/lib/strict-schema-import";
 import { SchemaVersionHelper } from "./SchemaVersionHelper";
 import {
@@ -517,7 +523,6 @@ export function VisualBook() {
   // the import review modal. Shared by file-input and paste-JSON flows.
   const processImportText = useCallback(async (text: string) => {
     try {
-      const { parseStoryboardJson, StoryboardImportError } = await import("@/lib/storyboard-import");
       let data: NormalizedImport;
       try {
         data = parseStoryboardJson(text);
@@ -3683,7 +3688,6 @@ export function VisualBook() {
                     setLastFailedImport(null);
                   } catch (err: any) {
                     setLastFailedImport(data);
-                    const { StoryboardImportError } = await import("@/lib/storyboard-import");
                     let summary = err?.message || "Something went wrong applying this storyboard. Your project was not changed.";
                     if (err instanceof StoryboardImportError && err.groupedIssues?.length) {
                       const sections = err.groupedIssues.map((g) => g.section).join(", ");
