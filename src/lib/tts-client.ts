@@ -2,6 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { AI_INPUT_LIMITS, assertMaxLength } from "@/lib/ai-input-limits";
 import { friendlyTooLargeFromResponseStatus } from "@/lib/edge-error";
 import { OPEN_NOVA_LOCAL_ONLY } from "@/lib/sovereign-mode";
+import { getTtsMode } from "@/lib/cost-mode";
 
 export type NarrationRequest = {
   text: string;
@@ -161,7 +162,6 @@ export async function requestNarrationAudio(request: NarrationRequest): Promise<
     };
   }
   const token = await getTtsAuthToken();
-  const { getTtsMode } = await import("./cost-mode");
   const ttsMode = getTtsMode();
 
   // Premium mode: gate against profitability — confirm overage charge if the

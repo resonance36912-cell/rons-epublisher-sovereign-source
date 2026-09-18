@@ -18,6 +18,7 @@ import {
   Mic2, Gauge, Sparkles, FileJson, Upload, ClipboardPaste,
 } from "lucide-react";
 import { NarrationCostEstimator } from "./NarrationCostEstimator";
+import { setTtsMode } from "@/lib/cost-mode";
 
 export type VideoQuality = "720p" | "1080p";
 export type VideoSpeed = "fast" | "normal" | "hq";
@@ -271,7 +272,7 @@ export function VisualBookActions({
               // Keep the server-side TTS routing mode in sync with the toggle so
               // the edge function bypasses admin/auto eco demotion when the user
               // has explicitly chosen Premium narration.
-              import("@/lib/cost-mode").then(({ setTtsMode }) => setTtsMode(checked ? "premium" : "eco"));
+              setTtsMode(checked ? "premium" : "eco");
             }}
             className="scale-75"
           />
