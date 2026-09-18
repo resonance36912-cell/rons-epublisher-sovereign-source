@@ -12,66 +12,77 @@
   <!-- canonical: https://reson8.life/apps/epublisher -->
   <url>
     <loc>https://www.resonanceonline.life/</loc>
+    <lastmod>2026-09-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <!-- canonical: https://reson8.life/about -->
   <url>
     <loc>https://www.resonanceonline.life/about</loc>
+    <lastmod>2026-09-15</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <!-- canonical: https://reson8.life/pricing -->
   <url>
     <loc>https://www.resonanceonline.life/pricing</loc>
+    <lastmod>2026-09-15</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <!-- canonical: https://reson8.life/support -->
   <url>
     <loc>https://www.resonanceonline.life/contact</loc>
+    <lastmod>2026-09-15</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <!-- canonical: https://reson8.life/terms -->
   <url>
     <loc>https://www.resonanceonline.life/terms</loc>
+    <lastmod>2026-09-15</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
   <!-- canonical: https://reson8.life/privacy -->
   <url>
     <loc>https://www.resonanceonline.life/privacy</loc>
+    <lastmod>2026-09-15</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
   <!-- canonical: https://reson8.life/apps/epublisher -->
   <url>
     <loc>https://www.resonanceonline.life/sitemap</loc>
+    <lastmod>2026-09-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   <!-- canonical: https://reson8.life/apps/epublisher -->
   <url>
     <loc>https://www.resonanceonline.life/samples/the-vision-of-diagnostics</loc>
+    <lastmod>2026-09-15</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <!-- canonical: https://reson8.life/apps/epublisher -->
   <url>
     <loc>https://www.resonanceonline.life/samples/the-secrets-of-the-universe</loc>
+    <lastmod>2026-09-15</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <!-- canonical: https://reson8.life/apps/epublisher -->
   <url>
     <loc>https://www.resonanceonline.life/samples/ashley-uys-story</loc>
+    <lastmod>2026-09-15</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <!-- canonical: https://reson8.life/apps/epublisher -->
   <url>
     <loc>https://www.resonanceonline.life/samples/automate-your-life</loc>
+    <lastmod>2026-09-15</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>

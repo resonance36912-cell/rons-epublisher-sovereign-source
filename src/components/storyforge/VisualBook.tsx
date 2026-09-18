@@ -41,6 +41,7 @@ import { OverallBookRating } from "./OverallBookRating";
 import { supabase } from "@/integrations/supabase/client";
 import { OPEN_NOVA_LOCAL_ONLY } from "@/lib/sovereign-mode";
 import { buildBookStructure } from "@/lib/book-structure";
+import { buildCanonicalStoryboard } from "@/lib/canonical-storyboard";
 
 // Extracted sub-components
 import { AiPenMenu, type AiEditMode } from "./visualbook/AiPenMenu";
@@ -474,7 +475,7 @@ export function VisualBook() {
 
     const bookStructure = buildBookStructure({ pages: exportedChapters, config, sources: dedupedSources, referenceImage });
 
-    const payload = {
+    const editorState = {
       schema: `${SCHEMA_PREFIX}${CURRENT_SCHEMA_VERSION}`,
       schemaVersion: CURRENT_SCHEMA_VERSION,
       exportedAt: new Date().toISOString(),
@@ -492,6 +493,14 @@ export function VisualBook() {
       referenceImage: referenceImage || null,
       assets: Array.from(assetUrls).map((url) => ({ url, kind: url === referenceImage ? "reference" : "chapter-image" })),
     };
+    const payload = buildCanonicalStoryboard({
+      projectId: projectId || null,
+      title: config.topic || "Untitled Project",
+      config,
+      chapters: exportedChapters,
+      sources: dedupedSources,
+      editorState,
+    });
 
     const suffix = isPartial ? `-selection-${exportedChapters.length}of${chapters.length}` : "";
     const filename = `${safeTitle}${suffix}-storyboard.json`;
@@ -992,7 +1001,7 @@ export function VisualBook() {
     setProgress({ current: 0, total: toGenerate.length });
 
     let completed = 0;
-    await mapWithConcurrencyLimit(toGenerate, 6, async (ch) => {
+    await mapWithConcurrencyLimit(toGenerate, OPEN_NOVA_LOCAL_ONLY ? 2 : 6, async (ch) => {
       if (stopGenerationRef.current) return;
       setChapters((prev) => prev.map((c) => c.id === ch.id ? { ...c, imageLoading: true } : c));
       try {

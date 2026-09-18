@@ -1,0 +1,17 @@
+﻿{
+    "schema":  "ronsas.spoke-source-authority.v1",
+    "app":  "epublisher",
+    "repository":  "https://github.com/resonance36912-cell/rons-epublisher-sovereign-source",
+    "ronsas_repository":  "https://github.com/resonance36912-cell/RONSAS",
+    "production_branch":  "main",
+    "promotion":  "review-branch-ci-merge",
+    "excludes":  [
+                     "secrets",
+                     ".env files",
+                     "runtime databases",
+                     "node_modules",
+                     "build output",
+                     "logs",
+                     "model caches"
+                 ]
+}
