@@ -1,0 +1,10 @@
+#!/bin/sh
+while read local_ref local_sha remote_ref remote_sha
+do
+  if [ "$remote_ref" = "refs/heads/main" ] && [ "$RONSAS_ALLOW_MAIN_PUSH" != "1" ]; then
+    echo "RONSAS policy: direct pushes to main are blocked. Push a review branch and merge through CI."
+    echo "Emergency override only: set RONSAS_ALLOW_MAIN_PUSH=1 for this push."
+    exit 1
+  fi
+done
+exit 0

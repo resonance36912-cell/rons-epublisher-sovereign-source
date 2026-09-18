@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { SlideChapter, StoryConfig, Source } from "@/components/storyforge/StoryForgeContext";
+import { CANONICAL_STORYBOARD_SCHEMA, CanonicalStoryboardV3Schema } from "@/lib/canonical-storyboard";
 
 /** Latest schema version this build writes. Bump when the export shape changes. */
 export const CURRENT_SCHEMA_VERSION = 3;
@@ -326,10 +327,28 @@ export function parseStoryboardJson(text: string): NormalizedImport {
       message: "This file is missing a `schema` tag. Only storyboards exported from Resonance ePublisher can be imported.",
     });
   }
+  if (schemaTag === CANONICAL_STORYBOARD_SCHEMA) {
+    const canonical = CanonicalStoryboardV3Schema.safeParse(raw);
+    if (!canonical.success) {
+      throw new StoryboardImportError({
+        kind: "validation",
+        schemaVersion: CURRENT_SCHEMA_VERSION,
+        message: "Canonical storyboard JSON failed validation.",
+        details: canonical.error.issues.map((issue) => `${issue.path.join(".") || "(root)"}: ${issue.message}`),
+      });
+    }
+    const normalized = parseStoryboardJson(JSON.stringify(canonical.data.editorState));
+    return {
+      ...normalized,
+      title: canonical.data.project.title || normalized.title,
+      exportedAt: canonical.data.project.generatedAt || normalized.exportedAt,
+      migrationNotes: [`Imported ${CANONICAL_STORYBOARD_SCHEMA} canonical wrapper.`, ...normalized.migrationNotes],
+    };
+  }
   if (!schemaTag.startsWith(SCHEMA_PREFIX)) {
     throw new StoryboardImportError({
       kind: "wrong-schema",
-      message: `Unrecognized schema "${schemaTag}". Expected a "${SCHEMA_PREFIX}N" file from Resonance ePublisher.`,
+      message: `Unrecognized schema "${schemaTag}". Expected "${CANONICAL_STORYBOARD_SCHEMA}" or a "${SCHEMA_PREFIX}N" file from Resonance ePublisher.`,
     });
   }
   const versionPart = schemaTag.slice(SCHEMA_PREFIX.length);

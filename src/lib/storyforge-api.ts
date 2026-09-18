@@ -28,18 +28,27 @@ const OPEN_NOVA_IMAGE_URL = String(
 ).replace(/\/$/, "");
 
 async function localImageRequest(body: Record<string, unknown>) {
-  const controller = new AbortController();
-  const timeout = window.setTimeout(() => controller.abort(), 120_000);
-  let response: Response;
-  try {
-    response = await fetch(`${OPEN_NOVA_IMAGE_URL}/v1/images/generate`, { method: "POST", credentials: "omit", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), signal: controller.signal });
-  } catch (error) {
-    if ((error as Error)?.name === "AbortError") throw new Error("Local image generation timed out after 120 seconds");
-    throw new Error("RONS local image service is unavailable on port 7865");
-  } finally { window.clearTimeout(timeout); }
-  const payload = await response.json().catch(() => null) as any;
-  if (!response.ok || !payload?.imageUrl) throw new Error(payload?.error || `Local image service returned HTTP ${response.status}`);
-  return payload;
+  const maxAttempts = 4;
+  let lastError: Error | null = null;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 120_000);
+    try {
+      const response = await fetch(`${OPEN_NOVA_IMAGE_URL}/v1/images/generate`, { method: "POST", credentials: "omit", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), signal: controller.signal });
+      const payload = await response.json().catch(() => null) as any;
+      if (response.ok && payload?.imageUrl) return payload;
+      const retryable = response.status === 503 && (payload?.retryable === true || payload?.error === "image_service_busy");
+      if (!retryable || attempt === maxAttempts) throw new Error(payload?.error || `Local image service returned HTTP ${response.status}`);
+      const retryAfter = Math.max(1, Number(response.headers.get("Retry-After") || 2));
+      await new Promise((resolve) => window.setTimeout(resolve, retryAfter * 1000 * attempt));
+    } catch (error) {
+      if ((error as Error)?.name === "AbortError") lastError = new Error("Local image generation timed out after 120 seconds");
+      else lastError = error instanceof Error ? error : new Error("RONS local image service request failed");
+      if (attempt === maxAttempts || !/busy|503|failed to fetch|network/i.test(lastError.message)) throw lastError;
+      await new Promise((resolve) => window.setTimeout(resolve, 1200 * attempt));
+    } finally { window.clearTimeout(timeout); }
+  }
+  throw lastError || new Error("RONS local image service is unavailable on port 7865");
 }
 
 async function openNovaResearchRequest<T>(
