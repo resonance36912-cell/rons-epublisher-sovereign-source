@@ -8,7 +8,7 @@
     "allowImportingTsExtensions": false,
     "outDir": "./dist/types",
     "rootDir": "./src",
-    "types": []
+    "types": ["node"]
   },
   "include": [
     "src/test-utils/index.ts",

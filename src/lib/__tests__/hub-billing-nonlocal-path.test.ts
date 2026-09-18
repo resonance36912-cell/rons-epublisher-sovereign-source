@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 afterEach(() => {
   vi.restoreAllMocks();
   vi.resetModules();
-  vi.unmock("@/lib/sovereign-mode");
+  vi.doUnmock("@/lib/sovereign-mode");
 });
 
 describe("hosted billing lookup remains reachable outside sovereign-local mode", () => {

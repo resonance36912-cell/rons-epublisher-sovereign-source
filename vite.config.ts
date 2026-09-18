@@ -1,5 +1,5 @@
 import { defineConfig, type PluginOption } from "vite";
-import react from "@vitejs/plugin-react-swc";
+import react from "@vitejs/plugin-react";
 import path from "path";
 import fs from "node:fs";
 import type { IncomingMessage, ServerResponse } from "node:http";
@@ -15,7 +15,7 @@ function verifyBrandAssetsPlugin(): PluginOption {
     name: "verify-brand-assets",
     apply: "build",
     buildStart() {
-      const script = path.resolve(__dirname, "scripts/verify-brand-assets.mjs");
+      const script = path.resolve(import.meta.dirname, "scripts/verify-brand-assets.mjs");
       const result = spawnSync(process.execPath, [script], { stdio: "inherit" });
       if (result.status !== 0) {
         this.error("Brand asset verification failed — see log above.");
@@ -33,7 +33,7 @@ function verifySitemapPlugin(): PluginOption {
     name: "verify-sitemap",
     apply: "build",
     buildStart() {
-      const script = path.resolve(__dirname, "scripts/validate-sitemap.mjs");
+      const script = path.resolve(import.meta.dirname, "scripts/validate-sitemap.mjs");
       const result = spawnSync(process.execPath, [script], { stdio: "inherit" });
       if (result.status !== 0) {
         this.error("Sitemap validation failed — see log above.");
@@ -65,7 +65,7 @@ function sitemapHeadersPlugin(): PluginOption {
     res.setHeader("Vary", "Accept-Encoding");
     res.setHeader("Cache-Control", "public, max-age=3600");
 
-    const gzPath = path.resolve(__dirname, `public${url}.gz`);
+    const gzPath = path.resolve(import.meta.dirname, `public${url}.gz`);
     const acceptsGzip = /\bgzip\b/.test(String(req.headers["accept-encoding"] ?? ""));
     if (acceptsGzip && fs.existsSync(gzPath)) {
       const body = fs.readFileSync(gzPath);
@@ -75,7 +75,7 @@ function sitemapHeadersPlugin(): PluginOption {
       return;
     }
 
-    const rawPath = path.resolve(__dirname, `public${url}`);
+    const rawPath = path.resolve(import.meta.dirname, `public${url}`);
     if (!fs.existsSync(rawPath)) return next();
     const body = fs.readFileSync(rawPath);
     res.setHeader("Content-Length", body.length);
@@ -156,7 +156,7 @@ export default defineConfig(({ mode }) => ({
   ].filter(Boolean),
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./src"),
+      "@": path.resolve(import.meta.dirname, "./src"),
     },
   },
 }));
