@@ -1,7 +1,7 @@
 import type { Source } from "@/components/storyforge/StoryForgeContext";
 
 const STT_BASE_URL = String(
-  import.meta.env.VITE_OPEN_NOVA_STT_URL || "http://127.0.0.1:7864",
+  import.meta.env.VITE_OPEN_NOVA_STT_URL || "/open-nova-stt",
 ).replace(/\/$/, "");
 
 export type YouTubeRecoveryProgress = {

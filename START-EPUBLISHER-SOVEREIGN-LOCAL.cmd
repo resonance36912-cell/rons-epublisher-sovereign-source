@@ -8,9 +8,10 @@ echo  URL: http://localhost:3101/app
 echo  External AI: denied by default
 echo  Lovable: not required
 echo ============================================================
-netstat -ano | findstr /R /C:":7864 .*LISTENING" >nul
+set "RONS_STT_PORT=7869"
+netstat -ano | findstr /R /C:":7869 .*LISTENING" >nul
 if errorlevel 1 (
-  echo Starting governed local STT service on port 7864...
+  echo Starting governed local STT service on port 7869...
   start "RONS ePublisher STT" /min cmd /c "C:\Users\Ashley\Resonance\OpenNova\runtime\start-epublisher-stt.cmd"
 )
 call npm.cmd run dev:sovereign

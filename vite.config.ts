@@ -102,7 +102,18 @@ export default defineConfig(({ mode }) => ({
       "/open-nova-research": {
         target: "http://127.0.0.1:8787",
         changeOrigin: false,
+        // Translate the public ePublisher browser origin at this trusted local proxy
+        // so the research service can remain loopback-origin restricted.
+        headers: { Origin: "http://localhost:3101" },
         rewrite: (requestPath) => requestPath.replace(/^\/open-nova-research/, ""),
+      },
+      "/open-nova-stt": {
+        target: "http://127.0.0.1:7869",
+        changeOrigin: false,
+        // Keep browser traffic same-origin while the local STT service remains
+        // bound to loopback and accepts only governed ePublisher origins.
+        headers: { Origin: "http://localhost:3101" },
+        rewrite: (requestPath) => requestPath.replace(/^\/open-nova-stt/, ""),
       },
     },
     hmr: {
@@ -120,7 +131,18 @@ export default defineConfig(({ mode }) => ({
       "/open-nova-research": {
         target: "http://127.0.0.1:8787",
         changeOrigin: false,
+        // Translate the public ePublisher browser origin at this trusted local proxy
+        // so the research service can remain loopback-origin restricted.
+        headers: { Origin: "http://localhost:3101" },
         rewrite: (requestPath) => requestPath.replace(/^\/open-nova-research/, ""),
+      },
+      "/open-nova-stt": {
+        target: "http://127.0.0.1:7869",
+        changeOrigin: false,
+        // Keep browser traffic same-origin while the local STT service remains
+        // bound to loopback and accepts only governed ePublisher origins.
+        headers: { Origin: "http://localhost:3101" },
+        rewrite: (requestPath) => requestPath.replace(/^\/open-nova-stt/, ""),
       },
     },
   },  optimizeDeps: {
