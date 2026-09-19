@@ -17,6 +17,7 @@ import { GenerationStepper, type GenerationStep } from "./GenerationStepper";
 import { useChapterImageViewAudit } from "@/hooks/useChapterImageViewAudit";
 import { RequestIdBadge } from "./RequestIdBadge";
 import { StoryboardError } from "@/lib/storyforge-api";
+import { OPEN_NOVA_LOCAL_ONLY } from "@/lib/sovereign-mode";
 
 type StepId = GenerationStep["id"];
 const INITIAL_STEPS: GenerationStep[] = [
@@ -415,7 +416,7 @@ export function StoryboardEditor() {
       const hasYouTubeSearch = allSources.some(
         (s) => s.type === "search" && s.title.toLowerCase().includes("youtube")
       );
-      if (!hasYouTubeSearch && config.topic.trim()) {
+      if (!OPEN_NOVA_LOCAL_ONLY && config.sourcePolicy === "supplementary_research" && !hasYouTubeSearch && config.topic.trim()) {
         // Source titles are capped at AI_INPUT_LIMITS.sourceTitle (2000), but
         // topics can be up to 5000 chars. Truncate the query portion so the
         // synthetic YouTube search source doesn't trip the 413 guard.

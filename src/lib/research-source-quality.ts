@@ -213,18 +213,42 @@ function cleanExtractedParagraphs(topic: string, raw: string): { text: string; i
 }
 
 function discoveryForSource(source: Source, discovered: QualifiedDiscoverySource[]) {
-  const key = canonicalizeResearchUrl(source.url || source.title || "");
-  return discovered.find((item) => item.canonicalUrl === key);
+  const key = canonicalizeResearchUrl(source.canonicalUrl || source.url || "");
+  if (key) {
+    const byUrl = discovered.find((item) => item.canonicalUrl === key);
+    if (byUrl) return byUrl;
+  }
+
+  const titleKey = normaliseText(source.title || "");
+  if (!titleKey) return undefined;
+  const titleMatches = discovered.filter((item) => normaliseText(item.title || "") === titleKey);
+  return titleMatches.length === 1 ? titleMatches[0] : undefined;
 }
 export function normaliseExtractedSources(
   topic: string,
   sources: Source[],
   discovered: QualifiedDiscoverySource[] = [],
+  requestedUrls: string[] = [],
 ): Source[] {
-  return (sources || []).map((source) => {
+  const positionalUrls = requestedUrls.length === (sources || []).length
+    ? requestedUrls.map(canonicalizeResearchUrl)
+    : [];
+  return (sources || []).map((source, index) => {
     const discovery = discoveryForSource(source, discovered);
+    const recoveredUrl = canonicalizeResearchUrl(
+      source.canonicalUrl
+      || source.url
+      || discovery?.canonicalUrl
+      || discovery?.url
+      || positionalUrls[index]
+      || "",
+    );
     const base = {
       ...source,
+      url: source.url || discovery?.url || positionalUrls[index] || recoveredUrl || undefined,
+      canonicalUrl: recoveredUrl || undefined,
+      provider: source.provider || discovery?.provider,
+      description: source.description || discovery?.description,
       relevance: discovery?.relevance || source.relevance || "unassessed",
       relevanceReason: discovery?.relevanceReason || source.relevanceReason,
       evidenceReview: source.evidenceReview || "not_reviewed",

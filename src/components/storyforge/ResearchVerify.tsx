@@ -220,7 +220,7 @@ export function ResearchVerify() {
             const recoveredSources = await recoverYouTubeEvidenceSources(finalStatus.processedSources || [], (item) => {
               setStatusMsg(`Recovering YouTube speech locally (${item.current}/${item.total}): ${item.title}`);
             });
-            const processedSources = normaliseExtractedSources(config.topic, recoveredSources, discovered);
+            const processedSources = normaliseExtractedSources(config.topic, recoveredSources, discovered, userUrls);
             const fileSources = sources.filter((s) => s.type === "file");
             setSources([...fileSources, ...processedSources]);
             const usable = processedSources.filter((source) => source.status === "ready").length;

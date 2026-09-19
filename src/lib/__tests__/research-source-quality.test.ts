@@ -63,6 +63,30 @@ describe("truthful extraction readiness", () => {
   });
 
 
+  it("recovers a canonical citation from a unique discovery-title match", () => {
+    const source: Source = {
+      id: "legacy-title-only",
+      type: "search",
+      title: "History of Cape Coloured People",
+      status: "error",
+    };
+    const [result] = normaliseExtractedSources(topic, [source], qualifyDiscoverySources(topic, fixture));
+    expect(result.url).toBe("https://www.youtube.com/watch?v=cape001");
+    expect(result.canonicalUrl).toBe("https://www.youtube.com/watch?v=cape001");
+  });
+
+  it("recovers a missing citation from the requested URL order when extraction preserves job order", () => {
+    const source: Source = {
+      id: "legacy-request-only",
+      type: "search",
+      title: "Recovered source title",
+      status: "error",
+    };
+    const [result] = normaliseExtractedSources(topic, [source], [], ["https://example.org/recovered?utm_source=test"]);
+    expect(result.url).toBe("https://example.org/recovered");
+    expect(result.canonicalUrl).toBe("https://example.org/recovered");
+  });
+
   it("routes short topical extracts to manual review instead of treating length as credibility", () => {
     const text = Array.from({ length: 8 }, (_, i) => `Cape Coloured history source note ${i + 1} describes community formation and change in the Cape.`).join(" ");
     const source: Source = { id: "short", type: "search", title: "Cape Coloured note", url: "https://example.org/short", content: text, status: "ready" };
