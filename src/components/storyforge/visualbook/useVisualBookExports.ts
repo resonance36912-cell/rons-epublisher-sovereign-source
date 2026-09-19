@@ -25,6 +25,7 @@ import { getBrandLogoDataUrl, BRAND_NAME, BRAND_URL } from "@/lib/brand-asset";
 import { OPEN_NOVA_LOCAL_ONLY } from "@/lib/sovereign-mode";
 import { assertBookStructureReadyForExport, buildBookStructure, defaultBookStructurePolicy } from "@/lib/book-structure";
 import { renderChapterSourceNotes } from "@/lib/chapter-source-notes";
+import { manuscriptApprovedForNarration, unresolvedPublicationIssues } from "@/lib/publication-readiness";
 
 /**
  * Download a Blob as a file using a blob URL.
@@ -2658,12 +2659,43 @@ document.addEventListener('keydown',function(e){if(e.key==='ArrowLeft')prevCh();
       const structure = buildBookStructure({ pages: chapters, config, sources, referenceImage });
       const result = assertBookStructureReadyForExport(structure, defaultBookStructurePolicy(config));
       if (result.warnings.length) console.warn("[BookReleaseGate]", result.warnings);
+      const editorialIssues = unresolvedPublicationIssues(chapters, sources, config)
+        .filter((item) => item.severity === "critical" || item.severity === "warning");
+      if (editorialIssues.length > 0) {
+        console.warn("[PublicationReadiness] Draft export contains unresolved findings", editorialIssues);
+        toast({
+          title: "Draft export — editorial findings remain",
+          description: `${editorialIssues.length} unresolved critical/warning finding${editorialIssues.length === 1 ? "" : "s"} remain. The file may be exported for review, but is not labelled publication-ready.`,
+        });
+      }
       return true;
     } catch (error: any) {
       toast({ title: "Book release gate blocked export", description: error?.message || "Book structure validation failed.", variant: "destructive" });
       return false;
     }
   }, [chapters, config, sources, referenceImage, toast]);
+
+  const ensureNarrationApproved = useCallback(() => {
+    const critical = unresolvedPublicationIssues(chapters, sources, config)
+      .filter((item) => item.severity === "critical");
+    if (critical.length > 0) {
+      toast({
+        title: "Audiovisual production blocked",
+        description: `Resolve or explicitly dismiss ${critical.length} critical publication-readiness finding${critical.length === 1 ? "" : "s"} before narration or video generation.`,
+        variant: "destructive",
+      });
+      return false;
+    }
+    if (!manuscriptApprovedForNarration(chapters, config)) {
+      toast({
+        title: "Approve the manuscript first",
+        description: "Narration and audiovisual output can only be generated from the explicitly approved current manuscript revision.",
+        variant: "destructive",
+      });
+      return false;
+    }
+    return true;
+  }, [chapters, config, sources, toast]);
 
   return {
     downloading,
@@ -2675,19 +2707,27 @@ document.addEventListener('keydown',function(e){if(e.key==='ArrowLeft')prevCh();
     lastAvDrift,
     manualDownload,
     dismissPendingDownload,
-    downloadAsEbook: (...args: Parameters<typeof downloadAsEbook>) => ensureExportReady() ? downloadAsEbook(...args) : undefined,
-    downloadAsEpub: (...args: Parameters<typeof downloadAsEpub>) => ensureExportReady() ? downloadAsEpub(...args) : undefined,
-    downloadAsPdf: (...args: Parameters<typeof downloadAsPdf>) => ensureExportReady() ? downloadAsPdf(...args) : undefined,
-    downloadAsAudio: (...args: Parameters<typeof downloadAsAudio>) => ensureExportReady() ? downloadAsAudio(...args) : undefined,
-    downloadAsVideo: (...args: Parameters<typeof downloadAsVideo>) => ensureExportReady() ? downloadAsVideo(...args) : undefined,
-    downloadAsTextBook: (...args: Parameters<typeof downloadAsTextBook>) => ensureExportReady() ? downloadAsTextBook(...args) : undefined,
+    downloadAsEbook: (...args: Parameters<typeof downloadAsEbook>) =>
+      ensureExportReady() && ensureNarrationApproved() ? downloadAsEbook(...args) : undefined,
+    downloadAsEpub: (...args: Parameters<typeof downloadAsEpub>) =>
+      ensureExportReady() ? downloadAsEpub(...args) : undefined,
+    downloadAsPdf: (...args: Parameters<typeof downloadAsPdf>) =>
+      ensureExportReady() ? downloadAsPdf(...args) : undefined,
+    downloadAsAudio: (...args: Parameters<typeof downloadAsAudio>) =>
+      ensureExportReady() && ensureNarrationApproved() ? downloadAsAudio(...args) : undefined,
+    downloadAsVideo: (...args: Parameters<typeof downloadAsVideo>) =>
+      ensureExportReady() && ensureNarrationApproved() ? downloadAsVideo(...args) : undefined,
+    downloadAsTextBook: (...args: Parameters<typeof downloadAsTextBook>) =>
+      ensureExportReady() ? downloadAsTextBook(...args) : undefined,
     stopExport,
     clearTtsCache,
     ttsCacheSize: _ttsCache.size,
     cachedChapterCount,
     canResume,
-    previewNarration,
-    previewAllNarration,
+    previewNarration: (...args: Parameters<typeof previewNarration>) =>
+      ensureNarrationApproved() ? previewNarration(...args) : undefined,
+    previewAllNarration: (...args: Parameters<typeof previewAllNarration>) =>
+      ensureNarrationApproved() ? previewAllNarration(...args) : undefined,
     stopPreview,
     previewingChapter,
     previewAllActive,

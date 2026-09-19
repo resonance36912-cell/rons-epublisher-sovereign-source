@@ -10,6 +10,12 @@ export type Source = {
   provider?: string;
   /** ISO timestamp recorded when the source content was retrieved. */
   retrievedAt?: string;
+  /** Publication/recording date when known. Kept separate from retrieval time. */
+  publishedAt?: string;
+  /** Creator, speaker, channel, publisher, or organization when known. */
+  creator?: string;
+  /** Optional source-local timecode or section used for the retained evidence. */
+  relevantTimestamp?: string;
   /** SHA-256 of the extracted text for receipt/integrity checks. */
   contentHash?: string;
   /** True when Open Nova reached the public source during verification. */
@@ -188,6 +194,17 @@ export type StoryConfig = {
   researchBasis?: "evidence" | "topic_only";
   theme: string;
   tone: string;
+  /** Editorial brief is distinct from visual theme/tone and governs manuscript transformation. */
+  publicationType?: "biography" | "autobiography" | "interview_collection" | "educational_guide" | "profile" | "other";
+  narrativePerspective?: "first_person" | "third_person";
+  audience?: "general" | "learners" | "professionals" | "specialist";
+  sourcePolicy?: "supplied_only" | "supplementary_research";
+  /** Required before third-party interview material is presented as first-person autobiography. */
+  firstPersonSubjectApproved?: boolean;
+  /** Signature of the manuscript revision explicitly approved for narration/audiovisual production. */
+  approvedManuscriptRevision?: string;
+  /** User dismissals for publication-readiness findings. Values contain the required dismissal reason. */
+  readinessDismissals?: Record<string, string>;
   depth: "summary" | "standard" | "extensive";
   orientation: "portrait" | "landscape";
   visualMode: boolean;
@@ -274,6 +291,12 @@ export const DEFAULT_CONFIG: StoryConfig = {
   researchBasis: "evidence",
   theme: "documentary",
   tone: "professional",
+  publicationType: "profile",
+  narrativePerspective: "third_person",
+  audience: "general",
+  sourcePolicy: "supplied_only",
+  firstPersonSubjectApproved: false,
+  readinessDismissals: {},
   depth: "standard",
   orientation: "landscape",
   visualMode: false,

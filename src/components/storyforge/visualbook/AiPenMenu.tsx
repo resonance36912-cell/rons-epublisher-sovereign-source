@@ -7,7 +7,7 @@ import type { SlideChapter } from "../StoryForgeContext";
 import { AI_INPUT_LIMITS } from "@/lib/ai-input-limits";
 import { AiInputLimitNotice } from "../AiInputLimitNotice";
 
-export type AiEditMode = "improve" | "shorten" | "expand" | "tone_formal" | "tone_casual" | "remove_object" | "replace_object" | "regenerate_image" | "custom";
+export type AiEditMode = "improve" | "shorten" | "expand" | "tone_formal" | "tone_casual" | "improve_structure" | "correct_transcript_artifacts" | "strengthen_attribution" | "reconcile_names" | "remove_object" | "replace_object" | "regenerate_image" | "custom";
 
 const NEEDS_INSTRUCTION = new Set<AiEditMode>(["remove_object", "replace_object", "regenerate_image"]);
 
@@ -17,6 +17,10 @@ const AI_MODES: { mode: AiEditMode; label: string; icon: string }[] = [
   { mode: "shorten", label: "Make Concise", icon: "✂️" },
   { mode: "tone_formal", label: "Formal Tone", icon: "🎩" },
   { mode: "tone_casual", label: "Casual Tone", icon: "💬" },
+  { mode: "improve_structure", label: "Improve Chapter Structure", icon: "🧭" },
+  { mode: "correct_transcript_artifacts", label: "Correct Transcript Artifacts", icon: "🧹" },
+  { mode: "strengthen_attribution", label: "Strengthen Source Attribution", icon: "🔎" },
+  { mode: "reconcile_names", label: "Reconcile Names / Terms", icon: "🧾" },
   { mode: "remove_object", label: "Remove Object", icon: "🗑️" },
   { mode: "replace_object", label: "Replace Object", icon: "🔄" },
   { mode: "regenerate_image", label: "Regenerate Image", icon: "🖼️" },
