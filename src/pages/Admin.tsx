@@ -35,7 +35,6 @@ import { ProfitabilityPanel } from "./admin/sections/ProfitabilityPanel";
 import { AdminHubCatalogProbe } from "./admin/sections/AdminHubCatalogProbe";
 import { AdminAuthOriginsChecklist } from "./admin/sections/AdminAuthOriginsChecklist";
 import { AdminPreviewRedirectChecklist } from "./admin/sections/AdminPreviewRedirectChecklist";
-import { AdminCreditPacksManager } from "./admin/sections/AdminCreditPacksManager";
 import { AdminCreditPacksAuditLog } from "./admin/sections/AdminCreditPacksAuditLog";
 import { AdminWebhookLogsSection } from "./admin/sections/AdminWebhookLogsSection";
 
@@ -102,7 +101,6 @@ function AdminInner() {
         <AdminSignedUrlTesterSection />
         <AdminTablesSection />
         <AdminPaymentsSection />
-        <AdminCreditPacksManager />
         <AdminCreditPacksAuditLog />
         <AdminWebhookLogsSection />
         <AdminHubCatalogProbe />

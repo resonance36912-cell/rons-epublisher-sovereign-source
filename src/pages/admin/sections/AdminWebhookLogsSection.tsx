@@ -6,13 +6,8 @@ import { Input } from "@/components/ui/input";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Loader2, RefreshCw, Webhook, Trash2, ShieldCheck, ShieldAlert, ShieldOff } from "lucide-react";
+import { Loader2, RefreshCw, Webhook, ShieldCheck, ShieldAlert, ShieldOff } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { toast } from "@/hooks/use-toast";
 
 type LogRow = {
   id: string;
@@ -60,8 +55,6 @@ export function AdminWebhookLogsSection() {
   const [outcome, setOutcome] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [expanded, setExpanded] = useState<string | null>(null);
-  const [confirmClear, setConfirmClear] = useState(false);
-  const [clearing, setClearing] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -97,44 +90,18 @@ export function AdminWebhookLogsSection() {
     });
   }, [rows, outcome, search]);
 
-  async function clearAll() {
-    setClearing(true);
-    const { error } = await supabase
-      .from("webhook_logs")
-      .delete()
-      .not("id", "is", null);
-    setClearing(false);
-    setConfirmClear(false);
-    if (error) {
-      toast({ title: "Failed to clear logs", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: "Webhook logs cleared" });
-      load();
-    }
-  }
-
   return (
     <div className="rounded-lg border border-border/60 bg-card/50 p-6 space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <Webhook className="w-5 h-5 text-primary" />
-          <h3 className="text-lg font-semibold">Payment webhook logs</h3>
-          <Badge variant="outline">{filtered.length}/{rows.length}</Badge>
+          <h3 className="text-lg font-semibold">Historical payment webhook audit</h3>
+          <Badge variant="outline">Read-only · {filtered.length}/{rows.length}</Badge>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="sm" onClick={load} disabled={loading}>
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
             <span className="ml-2">Refresh</span>
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="text-rose-400 border-rose-500/40 hover:bg-rose-500/10"
-            onClick={() => setConfirmClear(true)}
-            disabled={loading || rows.length === 0}
-          >
-            <Trash2 className="w-4 h-4 mr-2" />
-            Delete All
           </Button>
         </div>
       </div>
@@ -144,8 +111,8 @@ export function AdminWebhookLogsSection() {
           <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All providers</SelectItem>
-            <SelectItem value="paystack">Paystack</SelectItem>
-            <SelectItem value="payfast">Payfast</SelectItem>
+            <SelectItem value="paystack">Historical Paystack</SelectItem>
+            <SelectItem value="payfast">Historical Payfast</SelectItem>
           </SelectContent>
         </Select>
         <Select value={outcome} onValueChange={setOutcome}>
@@ -239,27 +206,6 @@ export function AdminWebhookLogsSection() {
         })}
       </div>
 
-      <AlertDialog open={confirmClear} onOpenChange={setConfirmClear}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete all webhook logs?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This permanently removes all {rows.length} recorded Paystack and Payfast callbacks. This cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={clearing}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={clearAll}
-              disabled={clearing}
-            >
-              {clearing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Trash2 className="w-4 h-4 mr-2" />}
-              Delete All
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

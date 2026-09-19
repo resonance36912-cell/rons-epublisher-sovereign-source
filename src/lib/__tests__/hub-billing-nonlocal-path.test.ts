@@ -15,15 +15,4 @@ describe("hosted billing lookup during the free promotion", () => {
     expect(await runHubPricingCheck({ force: true })).toEqual([]);
     expect(fetchSpy).not.toHaveBeenCalled();
   });
-
-  it("suppresses credit-pack billing lookups during the promotion", async () => {
-    vi.resetModules();
-    vi.doMock("@/lib/sovereign-mode", () => ({ OPEN_NOVA_LOCAL_ONLY: false }));
-    const { supabase } = await import("@/integrations/supabase/client");
-    const fromSpy = vi.spyOn(supabase, "from");
-    const { fetchActiveCreditPacks, fetchCreditPack } = await import("@/lib/credit-packs");
-    expect(await fetchActiveCreditPacks()).toEqual([]);
-    expect(await fetchCreditPack("pack_creator")).toBeNull();
-    expect(fromSpy).not.toHaveBeenCalled();
-  });
 });

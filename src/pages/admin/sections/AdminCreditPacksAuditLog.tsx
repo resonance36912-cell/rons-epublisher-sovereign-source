@@ -85,8 +85,8 @@ export function AdminCreditPacksAuditLog() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <ScrollText className="w-5 h-5 text-primary" />
-          <h3 className="text-lg font-semibold">Credit packs audit log</h3>
-          <Badge variant="outline">{rows.length}</Badge>
+          <h3 className="text-lg font-semibold">Historical credit-pack audit log</h3>
+          <Badge variant="outline">Read-only · {rows.length}</Badge>
         </div>
         <Button variant="ghost" size="sm" onClick={load} disabled={loading}>
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
