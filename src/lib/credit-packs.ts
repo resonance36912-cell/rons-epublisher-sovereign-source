@@ -3,6 +3,7 @@
 // and falls back to the seeded catalog if the network / DB is unavailable.
 import { supabase } from "@/integrations/supabase/client";
 import { OPEN_NOVA_LOCAL_ONLY } from "@/lib/sovereign-mode";
+import { FREE_PROMOTION_ACTIVE } from "@/lib/promotion";
 
 export type CreditPack = {
   id: string;
@@ -77,6 +78,7 @@ function rowToPack(r: Row): CreditPack {
 }
 
 export async function fetchActiveCreditPacks(): Promise<CreditPack[]> {
+  if (FREE_PROMOTION_ACTIVE) return [];
   if (OPEN_NOVA_LOCAL_ONLY) return FALLBACK_CREDIT_PACKS;
   try {
     const { data, error } = await supabase
@@ -92,6 +94,7 @@ export async function fetchActiveCreditPacks(): Promise<CreditPack[]> {
 }
 
 export async function fetchCreditPack(id: string): Promise<CreditPack | null> {
+  if (FREE_PROMOTION_ACTIVE) return null;
   if (OPEN_NOVA_LOCAL_ONLY) return FALLBACK_CREDIT_PACKS.find((p) => p.id === id) ?? null;
   try {
     const { data, error } = await supabase
@@ -109,5 +112,6 @@ export async function fetchCreditPack(id: string): Promise<CreditPack | null> {
 // Synchronous best-effort lookup from the static fallback list.
 // Prefer fetchCreditPack for anything that needs live pricing.
 export function getCreditPack(id: string): CreditPack | undefined {
+  if (FREE_PROMOTION_ACTIVE) return undefined;
   return FALLBACK_CREDIT_PACKS.find((p) => p.id === id);
 }

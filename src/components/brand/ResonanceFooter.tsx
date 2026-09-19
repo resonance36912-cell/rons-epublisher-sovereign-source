@@ -47,7 +47,7 @@ export function ResonanceFooter({
         </nav>
         <div className="text-xs space-y-2">
           <a href={`mailto:${contact}`} className="block hover:text-white">{contact}</a>
-          <a href="https://reson8.life/pricing" className="block hover:text-white">View hub pricing</a>
+          <a href="https://reson8.life/pricing" className="block hover:text-white">Free access promotion</a>
           <a href="https://reson8.life/updates" className="block hover:text-white">View updates</a>
           <a href="https://reson8.life/account" className="block hover:text-white">
             Back to hub
@@ -55,7 +55,7 @@ export function ResonanceFooter({
         </div>
       </div>
       <div className="border-t border-white/5 px-6 py-4 text-[10px] uppercase tracking-[0.25em] text-white/40 text-center">
-        © {new Date().getFullYear()} The Resonance · Official pricing, updates, checkout &amp; support managed by The Resonance Hub
+        © {new Date().getFullYear()} The Resonance · Free access promotion · Updates &amp; support managed by The Resonance Hub
       </div>
     </footer>
   );

@@ -1,3 +1,5 @@
+import { FREE_PROMOTION_ACTIVE } from "@/lib/promotion";
+
 // Centralized references to the Resonance Hub at reson8.life.
 // Spoke apps delegate billing and pricing to the Hub — see
 // docs/branding/HUB_PAYMENTS_INTEGRATION.md.
@@ -40,11 +42,13 @@ export function lifetimeSku(plan: LifetimeTier): string {
 export function hubCheckoutUrl(
   _plan: LifetimeTier | "bundle" = "creator",
 ): string {
+  if (FREE_PROMOTION_ACTIVE) return "/app";
   return `${HUB_URL}/pricing#epublisher`;
 }
 
 /** Build a canonical Hub once-off pack checkout URL. */
 export function hubPackCheckoutUrl(packId: HubPackId): string {
+  if (FREE_PROMOTION_ACTIVE) return "/app";
   const returnTo = typeof window !== "undefined" ? window.location.href : "/";
   return `${HUB_URL}/checkout?pack=${encodeURIComponent(packId)}&return_to=${encodeURIComponent(returnTo)}`;
 }
@@ -56,5 +60,6 @@ export const HUB_UPDATES_URL = `${HUB_URL}/updates` as const;
 
 /** Generic top-up entry: delegate pack selection to the Hub authority. */
 export function hubTopupUrl(): string {
+  if (FREE_PROMOTION_ACTIVE) return "/app";
   return `${HUB_URL}/pricing#epublisher`;
 }

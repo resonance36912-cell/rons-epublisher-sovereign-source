@@ -2,6 +2,7 @@ import { useUserTier } from "@/hooks/useUserTier";
 import { Button } from "@/components/ui/button";
 import { Crown, ArrowUpRight } from "lucide-react";
 import { HUB_BILLING_URL } from "@/lib/hub";
+import { FREE_PROMOTION_ACTIVE, FREE_PROMOTION } from "@/lib/promotion";
 
 /**
  * Once-off SKU labels shown in the account "Purchase" card and used by
@@ -39,6 +40,20 @@ const TIER_TO_SKU: Record<string, string> = {
  */
 export function SubscriptionManager() {
   const { tier, effectiveTier } = useUserTier();
+
+  if (FREE_PROMOTION_ACTIVE) {
+    return (
+      <div className="rounded-2xl border border-primary/20 bg-primary/5 p-5">
+        <div className="flex items-center gap-3">
+          <Crown className="h-5 w-5 text-primary" />
+          <div>
+            <h3 className="font-display font-bold">Full promotional access</h3>
+            <p className="text-sm text-muted-foreground">{FREE_PROMOTION.description}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
   if (tier === "free") return null;
 
   const sku = TIER_TO_SKU[effectiveTier] ?? TIER_TO_SKU[tier];

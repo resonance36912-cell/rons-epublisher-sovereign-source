@@ -6,30 +6,24 @@ afterEach(() => {
   vi.doUnmock("@/lib/sovereign-mode");
 });
 
-describe("hosted billing lookup remains reachable outside sovereign-local mode", () => {
-  it("uses the Hub catalog when local-only mode is disabled", async () => {
+describe("hosted billing lookup during the free promotion", () => {
+  it("does not call the Hub pricing catalog while promotion pricing is disabled", async () => {
     vi.resetModules();
     vi.doMock("@/lib/sovereign-mode", () => ({ OPEN_NOVA_LOCAL_ONLY: false }));
-    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify({
-      app: "epublisher",
-      packs: [
-        { id: "epublisher_starter_pack", amount: 99, currency: "ZAR", available: false },
-        { id: "epublisher_creator_pack", amount: 299, currency: "ZAR", available: false },
-        { id: "epublisher_studio_pack", amount: 699, currency: "ZAR", available: false },
-      ],
-    }), { status: 200, headers: { "Content-Type": "application/json" } }));
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
     const { runHubPricingCheck } = await import("@/lib/hub-pricing-check");
     expect(await runHubPricingCheck({ force: true })).toEqual([]);
-    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    expect(fetchSpy).not.toHaveBeenCalled();
   });
 
-  it("keeps the credit-pack Supabase lookup active outside local-only mode", async () => {
+  it("suppresses credit-pack billing lookups during the promotion", async () => {
     vi.resetModules();
     vi.doMock("@/lib/sovereign-mode", () => ({ OPEN_NOVA_LOCAL_ONLY: false }));
     const { supabase } = await import("@/integrations/supabase/client");
     const fromSpy = vi.spyOn(supabase, "from");
-    const { fetchActiveCreditPacks } = await import("@/lib/credit-packs");
-    await fetchActiveCreditPacks();
-    expect(fromSpy).toHaveBeenCalledWith("credit_packs");
+    const { fetchActiveCreditPacks, fetchCreditPack } = await import("@/lib/credit-packs");
+    expect(await fetchActiveCreditPacks()).toEqual([]);
+    expect(await fetchCreditPack("pack_creator")).toBeNull();
+    expect(fromSpy).not.toHaveBeenCalled();
   });
 });
