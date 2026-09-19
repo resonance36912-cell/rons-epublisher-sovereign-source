@@ -14,6 +14,7 @@ const video: Source = {
 };
 
 afterEach(() => {
+  vi.useRealTimers();
   vi.unstubAllGlobals();
 });
 
@@ -64,6 +65,34 @@ describe("local YouTube evidence recovery", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     const [result] = await recoverYouTubeEvidenceSources([video]);
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(result.status).toBe("ready");
+    expect(result.content).toBe(text);
+    expect(result.contentAvailability).toBe("speech_to_text");
+  });
+
+  it("waits and retries when the local STT service is temporarily busy", async () => {
+    vi.useFakeTimers();
+    const text = "Recovered transcript after the active local transcription completed.";
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 503,
+        headers: { get: (name: string) => name === "Retry-After" ? "2" : null },
+        json: async () => ({ error: "stt_service_busy", retryable: true }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: { get: () => null },
+        json: async () => ({ text, quality: { provider: "rons-local-whisper" } }),
+      });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const pending = recoverYouTubeEvidenceSources([video]);
+    await vi.runAllTimersAsync();
+    const [result] = await pending;
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(result.status).toBe("ready");
