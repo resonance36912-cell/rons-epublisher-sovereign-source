@@ -73,10 +73,19 @@ export async function requestHybridText(input: {
   timeoutMs?: number;
 }): Promise<HybridTextResult> {
   const allowCloud = input.allowCloud ?? getFreeCloudQualityEnabled();
+  const timeoutMs = input.timeoutMs ?? 90_000;
+  const startedAt = Date.now();
   const controller = new AbortController();
-  const timer = window.setTimeout(() => controller.abort(), input.timeoutMs ?? 90000);
+  const timer = window.setTimeout(() => controller.abort(), timeoutMs);
+
+  const throwIfTimedOut = () => {
+    if (controller.signal.aborted || Date.now() - startedAt >= timeoutMs) {
+      throw new Error("RONS AI Broker timed out");
+    }
+  };
+
   try {
-    const response = await fetch(`${BROKER_URL}/v1/hybrid-chat`, {
+    const startResponse = await fetch(`${BROKER_URL}/v1/hybrid-chat/jobs`, {
       method: "POST",
       credentials: "omit",
       headers: { "Content-Type": "application/json" },
@@ -87,11 +96,45 @@ export async function requestHybridText(input: {
       }),
       signal: controller.signal,
     });
-    const payload = await response.json().catch(() => null) as (HybridTextResult & { error?: string }) | null;
-    if (!response.ok || !payload?.text) {
-      throw new Error(payload?.error || `RONS AI Broker returned HTTP ${response.status}`);
+    const startPayload = await startResponse.json().catch(() => null) as
+      | (HybridTextResult & { job_id?: string; status?: string; error?: string })
+      | null;
+
+    if (!startResponse.ok || !startPayload) {
+      throw new Error(startPayload?.error || `RONS AI Broker job start returned HTTP ${startResponse.status}`);
     }
-    return payload;
+    if (startPayload.text) {
+      return startPayload;
+    }
+    if (!startPayload.job_id) {
+      throw new Error(`RONS AI Broker job start returned HTTP ${startResponse.status}`);
+    }
+
+    const jobId = startPayload.job_id;
+    while (true) {
+      throwIfTimedOut();
+      await new Promise((resolve) => window.setTimeout(resolve, 1500));
+      throwIfTimedOut();
+
+      const pollResponse = await fetch(`${BROKER_URL}/v1/hybrid-chat/jobs/${encodeURIComponent(jobId)}`, {
+        credentials: "omit",
+        signal: controller.signal,
+      });
+      const pollPayload = await pollResponse.json().catch(() => null) as
+        | { status?: string; result?: HybridTextResult; error?: string }
+        | null;
+
+      if (!pollResponse.ok || !pollPayload) {
+        throw new Error(pollPayload?.error || `RONS AI Broker job poll returned HTTP ${pollResponse.status}`);
+      }
+      if (pollPayload.status === "complete") {
+        if (!pollPayload.result?.text) throw new Error("RONS AI Broker completed without text");
+        return pollPayload.result;
+      }
+      if (pollPayload.status === "failed") {
+        throw new Error(pollPayload.error || "RONS AI Broker job failed");
+      }
+    }
   } catch (error) {
     if ((error as Error)?.name === "AbortError") {
       throw new Error("RONS AI Broker timed out");
