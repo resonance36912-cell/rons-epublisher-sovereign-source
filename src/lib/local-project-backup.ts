@@ -43,28 +43,26 @@ function writeStore(store: LocalProjectStore) {
 
 function sanitizeSources(sources: Source[]): Source[] {
   return sources.map((source) => ({
-    id: source.id,
-    type: source.type,
-    title: source.title,
+    ...source,
     content: source.content ? source.content.slice(0, 5000) : undefined,
-    status: source.status,
   }));
 }
 
 function sanitizeChapters(chapters: SlideChapter[]): SlideChapter[] {
   return chapters.map((chapter) => ({
-    id: chapter.id,
-    title: chapter.title,
-    body: chapter.body,
-    imagePrompt: chapter.imagePrompt,
-    diagramPrompt: chapter.diagramPrompt,
-    notes: chapter.notes,
-    imageUrl: chapter.imageUrl,
-    images: chapter.images,
-    imageLayout: chapter.imageLayout,
-    references: chapter.references,
-    rating: chapter.rating,
-    ratingComment: chapter.ratingComment,
+    ...chapter,
+    imageLoading: false,
+    imageUpgrading: false,
+    autoOptimizing: false,
+    images: chapter.images?.map((image) => ({ ...image })),
+    references: chapter.references ? [...chapter.references] : undefined,
+    evidenceClaims: chapter.evidenceClaims?.map((claim) => ({
+      ...claim,
+      sourceIndexes: [...claim.sourceIndexes],
+      sourceIds: claim.sourceIds ? [...claim.sourceIds] : undefined,
+      sourceTitles: claim.sourceTitles ? [...claim.sourceTitles] : undefined,
+      timestamps: claim.timestamps ? [...claim.timestamps] : undefined,
+    })),
   }));
 }
 
