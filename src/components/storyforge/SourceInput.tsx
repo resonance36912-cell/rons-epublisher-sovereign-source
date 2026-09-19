@@ -411,7 +411,7 @@ export function SourceInput() {
           <ShieldCheck className="w-4 h-4 text-primary shrink-0 mt-0.5" />
         </div>
         <Select
-          value={config.sourcePolicy || "supplied_only"}
+          value={config.sourcePolicy || "supplementary_research"}
           onValueChange={(v) => setConfig((c) => ({
             ...c,
             sourcePolicy: v as NonNullable<typeof c.sourcePolicy>,

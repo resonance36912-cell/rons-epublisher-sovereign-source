@@ -636,7 +636,7 @@ export async function generateStoryboard(
           publicationType: config.publicationType || "profile",
           narrativePerspective: config.narrativePerspective || "third_person",
           audience: config.audience || "general",
-          sourcePolicy: config.sourcePolicy || "supplied_only",
+          sourcePolicy: config.sourcePolicy || "supplementary_research",
           firstPersonSubjectApproved: config.firstPersonSubjectApproved === true,
           exactStoryPages: chapters.length,
           sourceExcerpts,

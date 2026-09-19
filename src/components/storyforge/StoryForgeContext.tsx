@@ -310,7 +310,7 @@ export const DEFAULT_CONFIG: StoryConfig = {
   publicationType: "profile",
   narrativePerspective: "third_person",
   audience: "general",
-  sourcePolicy: "supplied_only",
+  sourcePolicy: "supplementary_research",
   firstPersonSubjectApproved: false,
   readinessDismissals: {},
   depth: "standard",
