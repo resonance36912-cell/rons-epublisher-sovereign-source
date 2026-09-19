@@ -48,6 +48,29 @@ describe("local YouTube evidence recovery", () => {
     expect(result).toEqual(article);
   });
 
+  it("retries a transient 502 once and keeps the recovered transcript", async () => {
+    const text = "Recovered transcript after a transient YouTube acquisition failure.";
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 502,
+        json: async () => ({ error: "upstream_acquisition_failed" }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ text, quality: { provider: "rons-local-whisper" } }),
+      });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const [result] = await recoverYouTubeEvidenceSources([video]);
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(result.status).toBe("ready");
+    expect(result.content).toBe(text);
+    expect(result.contentAvailability).toBe("speech_to_text");
+  });
+
   it("keeps metadata-only truthfulness when local recovery fails", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
       ok: false,

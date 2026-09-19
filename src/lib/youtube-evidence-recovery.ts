@@ -49,29 +49,43 @@ function needsLocalRecovery(source: Source): boolean {
 }
 
 async function requestLocalYouTubeStt(source: Source): Promise<YouTubeSttResponse> {
-  const controller = new AbortController();
-  const timer = window.setTimeout(() => controller.abort(), 360_000);
-  try {
-    const response = await fetch(`${STT_BASE_URL}/transcribe-url`, {
-      method: "POST",
-      credentials: "omit",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ url: source.url || source.canonicalUrl, mode: "fast" }),
-      signal: controller.signal,
-    });
-    const payload = await response.json().catch(() => null) as YouTubeSttResponse | null;
-    if (!response.ok || !payload?.text?.trim()) {
-      throw new Error(payload?.error || `Local YouTube STT returned HTTP ${response.status}`);
+  const retryableStatuses = new Set([429, 502, 503, 504]);
+  let lastError: Error | null = null;
+
+  for (let attempt = 1; attempt <= 2; attempt += 1) {
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => controller.abort(), 360_000);
+    let response: Response | null = null;
+    try {
+      response = await fetch(`${STT_BASE_URL}/transcribe-url`, {
+        method: "POST",
+        credentials: "omit",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: source.url || source.canonicalUrl, mode: "fast" }),
+        signal: controller.signal,
+      });
+    } catch (error) {
+      if ((error as Error)?.name === "AbortError") {
+        throw new Error("Local YouTube speech-to-text timed out");
+      }
+      lastError = error as Error;
+      if (attempt === 2) throw lastError;
+    } finally {
+      window.clearTimeout(timer);
     }
-    return payload;
-  } catch (error) {
-    if ((error as Error)?.name === "AbortError") {
-      throw new Error("Local YouTube speech-to-text timed out");
+
+    if (response) {
+      const payload = await response.json().catch(() => null) as YouTubeSttResponse | null;
+      if (response.ok && payload?.text?.trim()) return payload;
+
+      lastError = new Error(payload?.error || `Local YouTube STT returned HTTP ${response.status}`);
+      if (!retryableStatuses.has(response.status) || attempt === 2) throw lastError;
     }
-    throw error;
-  } finally {
-    window.clearTimeout(timer);
+
+    await new Promise((resolve) => window.setTimeout(resolve, 400));
   }
+
+  throw lastError || new Error("Local YouTube speech-to-text failed");
 }
 
 export async function recoverYouTubeEvidenceSources(
