@@ -85,12 +85,34 @@ export function PublicationReadinessPanel({
     setRepairingCitations(true);
     try {
       const discovery = await discoverSources(config.topic);
-      const repaired = repairMissingSourceCitations(sources, discovery.sources);
-      if (repaired.repairedCount > 0) setSources(repaired.sources);
+      let repaired = repairMissingSourceCitations(sources, discovery.sources);
+      let repairedCount = repaired.repairedCount;
+
+      const targetedTitles = Array.from(new Set(
+        repaired.sources
+          .filter((source) => source.type === "search" && !source.url && !source.canonicalUrl && source.title.trim())
+          .map((source) => source.title.trim()),
+      )).slice(0, 8);
+
+      for (const title of targetedTitles) {
+        try {
+          const targeted = await discoverSources(title);
+          const next = repairMissingSourceCitations(repaired.sources, targeted.sources);
+          repaired = { sources: next.sources, repairedCount: repaired.repairedCount + next.repairedCount };
+          repairedCount += next.repairedCount;
+        } catch {
+          // A targeted lookup is best-effort; unresolved records remain visible for manual correction.
+        }
+      }
+
+      const remaining = repaired.sources.filter(
+        (source) => source.type === "search" && !source.url && !source.canonicalUrl,
+      ).length;
+      if (repairedCount > 0) setSources(repaired.sources);
       toast({
-        title: repaired.repairedCount > 0 ? "Citation locations recovered" : "No exact citation matches found",
-        description: repaired.repairedCount > 0
-          ? `${repaired.repairedCount} source citation${repaired.repairedCount === 1 ? "" : "s"} restored from exact public-source title matches.`
+        title: repairedCount > 0 ? "Citation locations recovered" : "No exact citation matches found",
+        description: repairedCount > 0
+          ? `${repairedCount} source citation${repairedCount === 1 ? "" : "s"} restored from exact public-source title matches${remaining ? `; ${remaining} still need manual review` : "."}`
           : "No source was changed. Re-open Research & Verify to select the exact original URLs.",
       });
     } catch (error) {
