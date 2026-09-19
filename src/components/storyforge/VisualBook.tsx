@@ -48,6 +48,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { OPEN_NOVA_LOCAL_ONLY } from "@/lib/sovereign-mode";
 import { buildBookStructure } from "@/lib/book-structure";
 import { buildCanonicalStoryboard } from "@/lib/canonical-storyboard";
+import { computeManuscriptRevision } from "@/lib/publication-readiness";
 
 // Extracted sub-components
 import { AiPenMenu, type AiEditMode } from "./visualbook/AiPenMenu";
@@ -461,6 +462,9 @@ export function VisualBook() {
         url: s.url,
         provider: s.provider,
         retrievedAt: s.retrievedAt,
+        publishedAt: s.publishedAt,
+        creator: s.creator,
+        relevantTimestamp: s.relevantTimestamp,
         contentHash: s.contentHash,
         verified: s.verified,
         description: s.description,
@@ -488,6 +492,11 @@ export function VisualBook() {
       generatedBy: "Resonance ePublisher",
       projectId: projectId || null,
       title: config.topic || "Untitled Project",
+      manuscriptRevision: computeManuscriptRevision(exportedChapters),
+      approvedManuscriptRevision: config.approvedManuscriptRevision || null,
+      publicationReadinessStatus: config.approvedManuscriptRevision === computeManuscriptRevision(exportedChapters)
+        ? "approved_revision"
+        : "draft_or_changed",
       config, storyline, storylineAccepted, overallRating,
       bookStructure,
       chapters: exportedChapters,
@@ -966,13 +975,33 @@ export function VisualBook() {
       return;
     }
 
+    const editorialInstructions: Partial<Record<AiEditMode, string>> = {
+      improve_structure:
+        "Improve this chapter's editorial structure without adding facts. Give it a coherent opening, logical paragraphs and transitions, and a conclusion supported by the existing text. Remove repetition. Preserve all names, dates, quotations, claims and uncertainty exactly unless a change is required for grammar.",
+      correct_transcript_artifacts:
+        "Transform transcript/broadcast artifacts into publication prose without inventing content. Remove housekeeping, greetings, time announcements, speaker labels and repeated interviewer questions when they add no substantive evidence. Preserve meaningful quotations and explicitly attribute them when the existing text identifies the speaker. Never convert an interviewer's words into the subject's memories.",
+      strengthen_attribution:
+        "Strengthen attribution using only information already present in this chapter. Distinguish direct quotation from paraphrase, make speaker ownership explicit where the text supports it, and do not invent a speaker or source. If attribution cannot be resolved from the chapter, mark the passage [VERIFY ATTRIBUTION] rather than guessing.",
+      reconcile_names:
+        "Review names, organisations, places and technical terms for internal inconsistency using only this chapter. Do not guess corrections. Where the text clearly establishes one form, use it consistently; otherwise preserve the variants and insert [VERIFY TERM: ...] at the unresolved occurrence.",
+    };
+    const editorialInstruction = editorialInstructions[mode];
+    const rewriteMode: AiEditMode = editorialInstruction ? "custom" : mode;
+    const rewriteInstruction = editorialInstruction || instruction;
+
     setRewritingId(chapterId);
     try {
       assertMaxLength("chapter body", chapter.body, AI_INPUT_LIMITS.rewriteBody);
-      assertMaxLength("instruction", instruction, AI_INPUT_LIMITS.rewriteInstruction);
+      assertMaxLength("instruction", rewriteInstruction, AI_INPUT_LIMITS.rewriteInstruction);
       assertMaxLength("chapter title", chapter.title, AI_INPUT_LIMITS.chapterTitle);
       const { data, error } = await supabase.functions.invoke("ai-rewrite-chapter", {
-        body: { chapterTitle: chapter.title, chapterBody: chapter.body, mode, instruction },
+        body: {
+          chapterTitle: chapter.title,
+          chapterBody: chapter.body,
+          mode: rewriteMode,
+          instruction: rewriteInstruction,
+          references: chapter.references || [],
+        },
       });
       if (error) throw new Error(await friendlyEdgeErrorMessage(error, "AI rewrite failed"));
       if (data?.error) throw new Error(data.error);
@@ -3771,7 +3800,7 @@ export function VisualBook() {
                   return (
                     <>
                       <div className="rounded-md border bg-muted/30 p-3 grid grid-cols-2 gap-x-4 gap-y-1.5">
-                        <div className="flex justify-between"><span className="text-muted-foreground">Schema</span><span className="font-mono text-xs">{previewExport.payload.schema}</span></div>
+                        <div className="flex justify-between"><span className="text-muted-foreground">Schema</span><span className="font-mono text-xs">{String(previewExport.payload.schema ?? "")}</span></div>
                         <div className="flex justify-between"><span className="text-muted-foreground">Version</span><span className="font-medium tabular-nums">v{previewExport.payload.schemaVersion}</span></div>
                         <div className="flex justify-between"><span className="text-muted-foreground">Chapters</span><span className="font-medium tabular-nums">{previewExport.exportedChapters.length}{previewExport.isPartial ? ` / ${chapters.length}` : ""}</span></div>
                         <div className="flex justify-between"><span className="text-muted-foreground">Sources</span><span className="font-medium tabular-nums">{previewExport.dedupedSources.length}{previewExport.droppedDuplicates > 0 ? ` (−${previewExport.droppedDuplicates} dup)` : ""}</span></div>

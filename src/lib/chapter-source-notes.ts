@@ -9,9 +9,16 @@ function escapeHtml(value: string): string {
 
 function parseReference(reference: string): { label: string; url?: string } {
   const trimmed = reference.trim();
-  const linked = trimmed.match(/^(.*?)\s*\((https?:\/\/[^\s]+)\)\s*$/i);
-  if (!linked) return { label: trimmed };
-  return { label: linked[1].trim() || linked[2], url: linked[2] };
+  const parenthesized = trimmed.match(/^(.*?)\s*\((https?:\/\/[^\s]+)\)\s*$/i);
+  if (parenthesized) return { label: parenthesized[1].trim() || parenthesized[2], url: parenthesized[2] };
+  const inlineUrl = trimmed.match(/https?:\/\/[^\s·)]+/i)?.[0];
+  if (!inlineUrl) return { label: trimmed };
+  const label = trimmed
+    .replace(inlineUrl, "")
+    .replace(/\s*·\s*·\s*/g, " · ")
+    .replace(/^\s*·\s*|\s*·\s*$/g, "")
+    .trim();
+  return { label: label || inlineUrl, url: inlineUrl };
 }
 
 /**

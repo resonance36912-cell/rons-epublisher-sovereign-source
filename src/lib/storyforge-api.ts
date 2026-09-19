@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import type { Source, SlideChapter, StoryConfig } from "@/components/storyforge/StoryForgeContext";
+import type { ChapterEvidenceClaim, Source, SlideChapter, StoryConfig } from "@/components/storyforge/StoryForgeContext";
 import { DEFAULT_IMAGE_DAILY_LIMIT, getUsageLimit } from "@/lib/usage-limits";
 import {
   beginCorrelationScope,
@@ -560,7 +560,7 @@ export async function generateStoryboard(
   config: StoryConfig,
   onProgress?: (update: StoryboardProgress) => void
 ): Promise<SlideChapter[]> {
-  const readySources = (sources || []).filter((source) => source.content?.trim() && source.status === "ready");
+  const readySources = (sources || []).filter((source) => source.content?.trim() && source.status === "ready" && !(source.type === "search" && !source.canonicalUrl && !source.url));
   if (config.researchBasis === "topic_only" && readySources.length === 0) {
     const requestId = `topic-only-${Date.now()}`;
     onProgress?.({ message: "Creating an explicitly unresearched topic-only draft…", percent: 80, requestId });
@@ -571,6 +571,13 @@ export async function generateStoryboard(
     }));
     onProgress?.({ message: "Topic-only draft ready — factual verification required", percent: 100, requestId });
     return chapters;
+  }
+  if (readySources.length === 0) {
+    const requestId = `evidence-missing-${Date.now()}`;
+    throw new StoryboardError(
+      "No citable evidence source is ready. Search-query placeholders are discovery aids, not manuscript evidence. Verify or attach an actual source before generating an evidence-grounded publication.",
+      requestId,
+    );
   }
   if (OPEN_NOVA_LOCAL_ONLY) {
     const requestId = `local-${Date.now()}`;
@@ -590,23 +597,47 @@ export async function generateStoryboard(
       .sort((a, b) => a.index - b.index)
       .map((item) => item.source);
     const text = usable.map((source) => source.content || "").join("\n\n");
+    const formatSourceReference = (source: Source) => {
+      const creator = source.creator?.trim();
+      const title = source.title?.trim() || "Untitled source";
+      const date = source.publishedAt?.trim();
+      const location = source.canonicalUrl || source.url;
+      const timestamp = source.relevantTimestamp?.trim();
+      return [
+        creator,
+        title,
+        date,
+        location,
+        timestamp ? `relevant section/time: ${timestamp}` : undefined,
+      ].filter(Boolean).join(" · ");
+    };
     let chapters = localFormatChapters(text || config.topic || "Untitled", config).map((chapter) => ({
       ...chapter,
-      references: usable.map((source) => source.url ? `${source.title} (${source.url})` : source.title),
+      references: usable.map(formatSourceReference),
+      notes: `${chapter.notes || ""} Fast structural source draft; editorial transformation is not complete until the premium manuscript pass succeeds.`.trim(),
     }));
     const premiumStoryboard = (config.visualQuality || "premium") !== "fast";
     if ((premiumStoryboard || getFreeCloudQualityEnabled()) && chapters.length > 0 && usable.length > 0) {
       try {
         onProgress?.({ message: "Directing premium storyboard structure and visual prompts…", percent: 82, requestId });
-        const sourceExcerpts = usable.map((source) => ({
+        const sourceExcerpts = usable.map((source, sourceIndex) => ({
+          sourceIndex,
           title: source.title,
-          url: source.url,
+          creator: source.creator,
+          publishedAt: source.publishedAt,
+          url: source.canonicalUrl || source.url,
+          relevantTimestamp: source.relevantTimestamp,
           excerpt: (source.content || "").slice(0, 4500),
         }));
         const prompt = JSON.stringify({
           topic: config.topic,
           theme: config.theme,
           tone: config.tone,
+          publicationType: config.publicationType || "profile",
+          narrativePerspective: config.narrativePerspective || "third_person",
+          audience: config.audience || "general",
+          sourcePolicy: config.sourcePolicy || "supplied_only",
+          firstPersonSubjectApproved: config.firstPersonSubjectApproved === true,
           exactStoryPages: chapters.length,
           sourceExcerpts,
           baselineChapters: chapters.map((chapter) => ({ title: chapter.title, body: chapter.body, imagePrompt: chapter.imagePrompt })),
@@ -615,30 +646,88 @@ export async function generateStoryboard(
           prompt,
           allowCloud: getFreeCloudQualityEnabled(),
           timeoutMs: config.visualQuality === "storyboard_pro" ? 150_000 : 120_000,
-          system: `You are the Resonance ePublisher premium storyboard director. Use ONLY the supplied source excerpts and baseline chapters. Preserve the exact story-page count and factual meaning. Never invent facts, dates, names, quotations, dialogue or events. Quality profile: ${config.visualQuality || "premium"}. Improve narrative structure, pacing, clarity and visual direction. Every imagePrompt must read like a professional production brief: concrete subject and action, environment, composition, camera/lens language, lighting, colour palette, material/texture detail, mood, and continuity anchors; avoid generic filler, text overlays, watermarks, invented events, and contradictory anatomy. For storyboard_pro, emphasize recurring character identity, wardrobe/environment continuity, deliberate shot variety and editorial sequencing. Return JSON only as {"chapters":[{"title":string,"body":string,"imagePrompt":string}]}. No markdown fences.`,
+          system: `You are the Resonance ePublisher premium manuscript editor and storyboard director. Use ONLY the supplied source excerpts and baseline chapters. Preserve the exact story-page count and the factual meaning of the evidence. Never invent facts, dates, names, quotations, dialogue, emotions, adversity, achievements, causal claims, or events. Transform source transcripts into polished publication prose: remove broadcast housekeeping, greetings, repeated interviewer questions, time announcements, and conversational filler unless editorially necessary; preserve meaningful direct quotations only when supported and attribute them to the correct speaker. Never convert an interviewer's words into the subject's memories. Publication type: ${config.publicationType || "profile"}; perspective: ${config.narrativePerspective || "third_person"}; audience: ${config.audience || "general"}. First-person autobiography is permitted only when firstPersonSubjectApproved is true; otherwise use third-person narration and do not create first-person memory claims. If sources conflict or a name, age, company, date, place, or term is uncertain, preserve the uncertainty or qualify it rather than choosing or silently correcting. Build the manuscript across ALL supplied sources by theme and chronology; do not map one source to one chapter. Merge corroborating evidence where appropriate and keep conflicting evidence visibly qualified. Give every chapter a distinct descriptive heading based on its actual supported content; do not use repeated titles or generic Part N headings. Build readable paragraphs, transitions, coherent openings and conclusions, while keeping all factual content traceable to supplied evidence. If evidence is thin, write a concise supported treatment rather than padding. Before writing each chapter, construct a compact evidence ledger and return it with the chapter. Each evidenceClaims entry must contain the retained claim, speaker when known, zero-based sourceIndexes, eventDate when explicitly supported, verificationStatus (supported, conflicting, or unresolved), and editorialTreatment (include, attribute, qualify, or omit). Never mark a claim supported merely because it appears in the baseline draft; support must come from sourceExcerpts. Return sourceIndexes as zero-based indexes into sourceExcerpts for the evidence actually used by each chapter. Quality profile: ${config.visualQuality || "premium"}. Every imagePrompt must be a professional production brief grounded in that chapter: subject/action, environment, composition, camera/lens language, lighting, colour palette, material/texture detail, mood, and continuity anchors; no invented events, text overlays, watermarks, or contradictory anatomy. For storyboard_pro, emphasize recurring identity, wardrobe/environment continuity, deliberate shot variety, and editorial sequencing. Return JSON only as {"chapters":[{"title":string,"body":string,"imagePrompt":string,"sourceIndexes":number[],"evidenceClaims":[{"claim":string,"speaker":string|null,"sourceIndexes":number[],"eventDate":string|null,"verificationStatus":"supported"|"conflicting"|"unresolved","editorialTreatment":"include"|"attribute"|"qualify"|"omit"}]}]}. No markdown fences.`,
         });
-        const parsed = parseHybridJson<{ chapters?: Array<{ title?: string; body?: string; imagePrompt?: string }> }>(refined.text);
+        type RefinedEvidenceClaim = {
+          claim?: string;
+          speaker?: string | null;
+          sourceIndexes?: number[];
+          eventDate?: string | null;
+          verificationStatus?: "supported" | "conflicting" | "unresolved";
+          editorialTreatment?: "include" | "attribute" | "qualify" | "omit";
+        };
+        type RefinedChapter = {
+          title?: string;
+          body?: string;
+          imagePrompt?: string;
+          sourceIndexes?: number[];
+          evidenceClaims?: RefinedEvidenceClaim[];
+        };
+        const parsed = parseHybridJson<{ chapters?: RefinedChapter[] }>(refined.text);
         const candidate = parsed?.chapters;
         const valid = Array.isArray(candidate) && candidate.length === chapters.length && candidate.every((chapter) =>
           typeof chapter?.title === "string" && chapter.title.trim().length > 0 &&
           typeof chapter?.body === "string" && chapter.body.trim().length > 0,
         );
         if (valid && candidate) {
-          chapters = chapters.map((base, index) => ({
-            ...base,
-            title: candidate[index].title!.trim(),
-            body: candidate[index].body!.trim(),
-            imagePrompt: candidate[index].imagePrompt?.trim() || base.imagePrompt,
-            notes: `${base.notes || ""} Quality refinement: ${refined.provider} (${refined.route || "governed"}).`.trim(),
-          }));
-          onProgress?.({ message: `Quality refinement complete via ${refined.provider}`, percent: 96, requestId });
+          chapters = chapters.map((base, index) => {
+            const sourceIndexes = Array.isArray(candidate[index].sourceIndexes)
+              ? Array.from(new Set(candidate[index].sourceIndexes!
+                .filter((value) => Number.isInteger(value) && value >= 0 && value < usable.length)))
+              : [];
+            const chapterReferences = sourceIndexes.length
+              ? sourceIndexes.map((sourceIndex) => formatSourceReference(usable[sourceIndex]))
+              : base.references;
+            const evidenceClaims: ChapterEvidenceClaim[] = Array.isArray(candidate[index].evidenceClaims)
+              ? candidate[index].evidenceClaims!
+                .filter((claim) => typeof claim?.claim === "string" && claim.claim.trim().length > 0)
+                .map((claim, claimIndex) => {
+                  const claimSourceIndexes = Array.from(new Set((claim.sourceIndexes || [])
+                    .filter((value) => Number.isInteger(value) && value >= 0 && value < usable.length)));
+                  const claimSources = claimSourceIndexes.map((sourceIndex) => usable[sourceIndex]);
+                  return {
+                    id: `${base.id}-evidence-${claimIndex + 1}`,
+                    claim: claim.claim!.trim(),
+                    speaker: claim.speaker?.trim() || undefined,
+                    sourceIndexes: claimSourceIndexes,
+                    sourceIds: claimSources.map((source) => source.id),
+                    sourceTitles: claimSources.map((source) => source.title),
+                    timestamps: claimSources.map((source) => source.relevantTimestamp).filter((value): value is string => Boolean(value)),
+                    eventDate: claim.eventDate?.trim() || undefined,
+                    sourceDate: claimSources.map((source) => source.publishedAt).find((value): value is string => Boolean(value)),
+                    verificationStatus: claim.verificationStatus || (claimSourceIndexes.length ? "supported" : "unresolved"),
+                    editorialTreatment: claim.editorialTreatment || (claimSourceIndexes.length ? "include" : "qualify"),
+                  };
+                })
+              : [];
+            return {
+              ...base,
+              title: candidate[index].title!.trim(),
+              body: candidate[index].body!.trim(),
+              imagePrompt: candidate[index].imagePrompt?.trim() || base.imagePrompt,
+              references: chapterReferences,
+              evidenceClaims,
+              notes: `${base.notes || ""} Premium editorial transformation: ${refined.provider} (${refined.route || "governed"}); evidence indexes retained where supplied.`.trim(),
+            };
+          });
+          onProgress?.({ message: `Premium editorial transformation complete via ${refined.provider}`, percent: 96, requestId });
+        } else if (premiumStoryboard) {
+          throw new Error("Premium editorial transformation returned an incomplete or invalid manuscript payload.");
         }
       } catch (error) {
-        console.warn("Free-cloud storyboard refinement unavailable; retaining local storyboard:", error);
-        onProgress?.({ message: "Free-cloud unavailable; keeping governed local storyboard", percent: 96, requestId });
+        if (premiumStoryboard) {
+          const detail = error instanceof Error ? error.message : "unknown editorial transformation failure";
+          console.error("Premium editorial transformation failed; refusing raw-source fallback:", error);
+          throw new StoryboardError(
+            `Premium editorial transformation failed. Raw source/transcript text was not substituted as a completed manuscript. Retry after the governed local AI service is available. Detail: ${detail}`,
+            requestId,
+          );
+        }
+        console.warn("Optional free-cloud refinement unavailable; retaining explicit fast structural draft:", error);
+        onProgress?.({ message: "Quality boost unavailable; keeping explicit fast structural draft", percent: 96, requestId });
       }
     }
-    onProgress?.({ message: "Local storyboard ready", percent: 100, requestId });
+    onProgress?.({ message: premiumStoryboard ? "Publication manuscript ready for editorial review" : "Fast structural draft ready — editorial review required", percent: 100, requestId });
     return chapters;
   }
   // Open a single correlation scope for the whole storyboard flow. Every

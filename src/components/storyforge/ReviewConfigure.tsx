@@ -206,6 +206,95 @@ export function ReviewConfigure() {
         <p className="text-sm text-muted-foreground">{config.topic}</p>
       </div>
 
+      {/* Publication brief — editorial intent is distinct from visual theme/tone. */}
+      <div className="space-y-4 rounded-xl border border-border bg-card/50 p-4">
+        <div>
+          <h3 className="text-sm font-medium">Publication brief</h3>
+          <p className="text-xs text-muted-foreground mt-1">
+            Sets the manuscript type, narrative perspective, audience, and evidence policy before editorial transformation.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <label className="space-y-1.5 text-xs font-medium text-muted-foreground">
+            Publication type
+            <Select
+              value={config.publicationType || "profile"}
+              onValueChange={(v) => setConfig((c) => ({
+                ...c,
+                publicationType: v as NonNullable<typeof c.publicationType>,
+                narrativePerspective: v === "autobiography" ? (c.narrativePerspective || "first_person") : c.narrativePerspective,
+              }))}
+            >
+              <SelectTrigger className="bg-background text-foreground"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="profile">Biographical profile</SelectItem>
+                <SelectItem value="biography">Biography</SelectItem>
+                <SelectItem value="autobiography">Autobiography</SelectItem>
+                <SelectItem value="interview_collection">Interview collection</SelectItem>
+                <SelectItem value="educational_guide">Educational guide</SelectItem>
+                <SelectItem value="other">Other</SelectItem>
+              </SelectContent>
+            </Select>
+          </label>
+          <label className="space-y-1.5 text-xs font-medium text-muted-foreground">
+            Narrative perspective
+            <Select
+              value={config.narrativePerspective || "third_person"}
+              onValueChange={(v) => setConfig((c) => ({ ...c, narrativePerspective: v as NonNullable<typeof c.narrativePerspective> }))}
+            >
+              <SelectTrigger className="bg-background text-foreground"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="third_person">Third person</SelectItem>
+                <SelectItem value="first_person">First person</SelectItem>
+              </SelectContent>
+            </Select>
+          </label>
+          <label className="space-y-1.5 text-xs font-medium text-muted-foreground">
+            Audience
+            <Select
+              value={config.audience || "general"}
+              onValueChange={(v) => setConfig((c) => ({ ...c, audience: v as NonNullable<typeof c.audience> }))}
+            >
+              <SelectTrigger className="bg-background text-foreground"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="general">General readers</SelectItem>
+                <SelectItem value="learners">Learners</SelectItem>
+                <SelectItem value="professionals">Professionals</SelectItem>
+                <SelectItem value="specialist">Specialist audience</SelectItem>
+              </SelectContent>
+            </Select>
+          </label>
+          <label className="space-y-1.5 text-xs font-medium text-muted-foreground">
+            Source policy
+            <Select
+              value={config.sourcePolicy || "supplied_only"}
+              onValueChange={(v) => setConfig((c) => ({ ...c, sourcePolicy: v as NonNullable<typeof c.sourcePolicy> }))}
+            >
+              <SelectTrigger className="bg-background text-foreground"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="supplied_only">Supplied sources only</SelectItem>
+                <SelectItem value="supplementary_research">Supplementary research permitted</SelectItem>
+              </SelectContent>
+            </Select>
+          </label>
+        </div>
+        {config.publicationType === "autobiography" && config.narrativePerspective === "first_person" && (
+          <div className="flex items-center justify-between gap-4 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3">
+            <div>
+              <p className="text-sm font-medium">Subject-approved first-person adaptation</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Required before third-party interview material is presented as the subject's memories. Speaker attribution must still be reviewed.
+              </p>
+            </div>
+            <Switch
+              aria-label="Subject approved first-person adaptation"
+              checked={config.firstPersonSubjectApproved === true}
+              onCheckedChange={(checked) => setConfig((c) => ({ ...c, firstPersonSubjectApproved: checked }))}
+            />
+          </div>
+        )}
+      </div>
+
       {/* Theme & Tone */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-2">

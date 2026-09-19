@@ -1,4 +1,5 @@
 import type {
+  ChapterEvidenceClaim,
   ChapterImage,
   ChapterImageLayout,
   SlideChapter,
@@ -18,6 +19,7 @@ export type BookStoryPage = {
   images?: ChapterImage[];
   imageLayout?: ChapterImageLayout;
   references?: string[];
+  evidenceClaims?: ChapterEvidenceClaim[];
   notes?: string;
 };
 
@@ -37,6 +39,9 @@ export type BookSourceNote = {
   title: string;
   url?: string;
   provider?: string;
+  creator?: string;
+  publishedAt?: string;
+  relevantTimestamp?: string;
   retrievedAt?: string;
   contentHash?: string;
   verified?: boolean;
@@ -92,8 +97,11 @@ function sourceNoteFromSource(source: Source): BookSourceNote {
   return {
     id: source.id,
     title: source.title,
-    url: source.url,
+    url: source.canonicalUrl || source.url,
     provider: source.provider,
+    creator: source.creator,
+    publishedAt: source.publishedAt,
+    relevantTimestamp: source.relevantTimestamp,
     retrievedAt: source.retrievedAt,
     contentHash: source.contentHash,
     verified: source.verified,
@@ -115,6 +123,7 @@ export function buildBookStructure(input: {
     images: page.images,
     imageLayout: page.imageLayout,
     references: page.references,
+    evidenceClaims: page.evidenceClaims,
     notes: page.notes,
   }));
 

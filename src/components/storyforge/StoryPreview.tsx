@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useI18n } from "@/lib/i18n";
 import { generateStoryboard, StoryboardError } from "@/lib/storyforge-api";
 import { useToast } from "@/hooks/use-toast";
-import { ThemeToneValidator } from "./ThemeToneValidator";
+import { PublicationReadinessPanel } from "./PublicationReadinessPanel";
 import { CitedParagraphs } from "./CitedParagraphs";
 import type { Source, SlideChapter } from "./StoryForgeContext";
 import { useChapterImageViewAudit } from "@/hooks/useChapterImageViewAudit";
@@ -30,7 +30,7 @@ function ChapterSlide({ chapter, index, sources, prefs }: { chapter: SlideChapte
     const contentH = content.scrollHeight;
 
     if (contentH > containerH && contentH > 0) {
-      const newScale = Math.max(0.45, (containerH / contentH) * 0.95);
+      const newScale = Math.max(0.85, (containerH / contentH) * 0.95);
       setScale(newScale);
     } else {
       setScale(1);
@@ -52,7 +52,7 @@ function ChapterSlide({ chapter, index, sources, prefs }: { chapter: SlideChapte
   const alignClass = prefs.textAlign === "center" ? "text-center" : prefs.textAlign === "justify" ? "text-justify" : "text-left";
 
   return (
-    <div ref={containerRef} className="w-full h-full overflow-hidden px-4 py-2">
+    <div ref={containerRef} className="w-full h-full overflow-y-auto overflow-x-hidden px-4 py-2 scrollbar-thin">
       <div
         ref={contentRef}
         className="w-full flex items-start justify-center"
@@ -153,9 +153,30 @@ export function StoryPreview() {
     }
   }, [sources, config, setChapters, toast, regenRequestId]);
 
-  const allReferences = sources
-    .filter((s) => s.type !== "file" && s.title)
-    .map((s) => s.title);
+  const allReferences = Array.from(new Set(
+    sources
+      .filter((s) => s.title && s.status === "ready" && (s.type !== "search" || !!s.canonicalUrl || !!s.url))
+      .map((s) => [
+        s.creator?.trim(),
+        s.title.trim(),
+        s.publishedAt?.trim(),
+        s.canonicalUrl || s.url,
+        s.relevantTimestamp?.trim() ? `relevant section/time: ${s.relevantTimestamp.trim()}` : undefined,
+      ].filter(Boolean).join(" · "))
+      .filter(Boolean),
+  ));
+
+  const publicationLabel = ({
+    profile: "biographical profile",
+    biography: "biography",
+    autobiography: "autobiography",
+    interview_collection: "interview collection",
+    educational_guide: "educational guide",
+    other: "publication",
+  } as const)[config.publicationType || "profile"];
+  const tone = (config.tone || "professional").trim();
+  const article = /^[aeiou]/i.test(tone) ? "An" : "A";
+  const publicationDescription = `${article} ${tone} ${publicationLabel}`;
 
   const hasRefs = allReferences.length > 0;
   const totalSlides = chapters.length + 1 + (hasRefs ? 1 : 0);
@@ -246,7 +267,7 @@ export function StoryPreview() {
             isFullscreen={isFullscreen}
             deck={{
               title: config.topic || "Your Story",
-              subtitle: `A ${config.tone} ${config.theme} storybook`,
+              subtitle: publicationDescription,
               chapters,
               sources,
             }}
@@ -258,7 +279,14 @@ export function StoryPreview() {
       {viewMode === "readAll" ? (
         /* ── Read All view ── */
         <>
-        <ThemeToneValidator chapters={chapters} theme={config.theme} tone={config.tone} />
+        <PublicationReadinessPanel
+          chapters={chapters}
+          sources={sources}
+          config={config}
+          setConfig={setConfig}
+          setChapters={setChapters}
+          onJumpToChapter={(chIdx) => { setViewMode("slides"); setCurrentSlide(chIdx); }}
+        />
         <div className="glass-card overflow-hidden glow-primary">
           <div className="max-h-[70vh] overflow-y-auto p-8 md:p-12 space-y-12 scrollbar-thin">
             {/* Title */}
@@ -267,8 +295,7 @@ export function StoryPreview() {
                 {config.topic || "Your Story"}
               </h1>
               <p className="text-muted-foreground text-base">
-                A <span className="text-accent">{config.tone}</span>{" "}
-                <span className="text-primary">{config.theme}</span> storybook
+                {publicationDescription}
               </p>
             </div>
 
@@ -289,7 +316,7 @@ export function StoryPreview() {
                   body={ch.body}
                   references={ch.references}
                   sources={sources}
-                  className="text-sm leading-[1.8] text-foreground/75 space-y-3"
+                  className="text-[18px] leading-[1.8] text-foreground/80 space-y-4"
                 />
               </div>
             ))}
@@ -314,16 +341,18 @@ export function StoryPreview() {
       ) : (
         /* ── Slide view ── */
         <>
-          <ThemeToneValidator
+          <PublicationReadinessPanel
             chapters={chapters}
-            theme={config.theme}
-            tone={config.tone}
+            sources={sources}
+            config={config}
+            setConfig={setConfig}
+            setChapters={setChapters}
             onJumpToChapter={(chIdx) => setCurrentSlide(chIdx)}
           />
           <div
             ref={stageRef}
             className={`relative glass-card overflow-hidden glow-primary ${
-              isFullscreen ? "fixed inset-0 z-50 flex items-center justify-center !rounded-none" : ""
+              isFullscreen ? "fixed inset-0 z-50 flex flex-col items-center justify-center !rounded-none" : ""
             } ${
               prefs.background === "dark" ? "bg-[hsl(240_10%_10%)] text-[hsl(0_0%_96%)]"
                 : prefs.background === "cream" ? "bg-[hsl(40_45%_94%)] text-[hsl(25_30%_15%)]"
@@ -360,8 +389,7 @@ export function StoryPreview() {
                           {config.topic || "Your Story"}
                         </h1>
                         <p className="text-muted-foreground text-base md:text-lg">
-                          A <span className="text-accent">{config.tone}</span>{" "}
-                          <span className="text-primary">{config.theme}</span> storybook
+                          {publicationDescription}
                         </p>
                       </div>
                       <motion.div
@@ -393,8 +421,8 @@ export function StoryPreview() {
               </AnimatePresence>
             </div>
 
-            {/* Navigation overlay */}
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-card/90 backdrop-blur-md border border-border/40 rounded-full px-4 py-2 shadow-lg">
+            {/* Navigation is intentionally outside the reading canvas so it never obscures manuscript text. */}
+            <div className="mx-auto mt-3 mb-3 w-fit flex items-center gap-3 bg-card/90 backdrop-blur-md border border-border/40 rounded-full px-4 py-2 shadow-lg">
               <button
                 onClick={prev}
                 disabled={currentSlide === 0}
