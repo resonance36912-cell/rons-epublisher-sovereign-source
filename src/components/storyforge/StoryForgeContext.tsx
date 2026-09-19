@@ -59,6 +59,20 @@ export type ChapterImage = {
 /** How a chapter's images render in-app and (Phase-B) in exports. */
 export type ChapterImageLayout = "stack" | "grid" | "hero" | "carousel";
 
+export type ChapterEvidenceClaim = {
+  id?: string;
+  claim: string;
+  speaker?: string;
+  sourceIndexes: number[];
+  sourceIds?: string[];
+  sourceTitles?: string[];
+  timestamps?: string[];
+  eventDate?: string;
+  sourceDate?: string;
+  verificationStatus: "supported" | "conflicting" | "unresolved";
+  editorialTreatment: "include" | "attribute" | "qualify" | "omit";
+};
+
 export type SlideChapter = {
   id: string;
   title: string;
@@ -88,6 +102,8 @@ export type SlideChapter = {
   /** Correlation ID returned by the most recent elevenlabs-tts call — links to api_usage_logs.metadata->>'correlation_id'. */
   ttsCorrelationId?: string;
   references?: string[];
+  /** Structured evidence ledger for claims retained in this chapter. */
+  evidenceClaims?: ChapterEvidenceClaim[];
   rating?: number;
   ratingComment?: string;
   autoOptimizing?: boolean;

@@ -84,7 +84,8 @@ export function CitedParagraphs({ body, references, sources, className, style }:
             <span className="inline-flex items-baseline gap-0.5 ml-1 align-baseline">
               {refSources.map(({ index, label, source }) => {
                 const snip = findSnippet(p, source?.content);
-                const url = source && isUrl(source.title) ? source.title : (isUrl(label) ? label : undefined);
+                const inlineUrl = label.match(/https?:\/\/[^\s·)]+/i)?.[0];
+                const url = source?.canonicalUrl || source?.url || (source && isUrl(source.title) ? source.title : undefined) || inlineUrl || (isUrl(label) ? label : undefined);
                 return (
                   <Popover key={index}>
                     <PopoverTrigger asChild>
@@ -109,10 +110,19 @@ export function CitedParagraphs({ body, references, sources, className, style }:
                             {source?.title || label}
                           </div>
                           {source && (
-                            <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                              {source.type === "url" ? "Web source" : source.type === "file" ? "Uploaded file" : "Search result"}
-                              {snip?.matched ? " · matched" : snip ? " · excerpt" : ""}
-                            </div>
+                            <>
+                              <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                                {source.type === "url" ? "Web source" : source.type === "file" ? "Uploaded file" : "Search result"}
+                                {snip?.matched ? " · matched" : snip ? " · excerpt" : ""}
+                                {source.verified === false ? " · unverified" : source.verified ? " · verified retrieval" : ""}
+                              </div>
+                              {(source.creator || source.publishedAt || source.relevantTimestamp) && (
+                                <div className="text-[10px] text-muted-foreground leading-relaxed">
+                                  {[source.creator, source.publishedAt, source.relevantTimestamp ? `time/section: ${source.relevantTimestamp}` : undefined]
+                                    .filter(Boolean).join(" · ")}
+                                </div>
+                              )}
+                            </>
                           )}
                         </div>
                       </div>

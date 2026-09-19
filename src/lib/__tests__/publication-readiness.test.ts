@@ -110,5 +110,66 @@ describe("publication readiness", () => {
     const issues = analysePublicationReadiness([ch], [source], config());
     expect(issues.some((item) => item.id.includes("search-reference") && item.severity === "critical")).toBe(true);
   });
+
+  it("hard-fails chapters that are predominantly verbatim from one source", () => {
+    const verbatim = "I built the first prototype in a small workshop before the team expanded the process into a validated production method for regional diagnostic access.";
+    const src = { ...source, content: verbatim + " " + verbatim };
+    const ch = chapter({ body: verbatim + " " + verbatim });
+    const issues = analysePublicationReadiness([ch], [src], config());
+    expect(issues.some((item) => item.id.includes("verbatim-source") && item.severity === "critical")).toBe(true);
+  });
+
+  it("detects interviewer leakage, chronology regression and sensitive content", () => {
+    const ch = chapter({
+      body: "Welcome to this week's episode. In 2021 the programme expanded. In 2018 my sister died after violence in the community.",
+    });
+    const issues = analysePublicationReadiness([ch], [source], config());
+    expect(issues.some((item) => item.id.includes("interviewer-marker"))).toBe(true);
+    expect(issues.some((item) => item.id.includes("chronology-regression"))).toBe(true);
+    expect(issues.some((item) => item.id.includes("sensitive-content"))).toBe(true);
+  });
+
+  it("requires strong first-person consistency for approved autobiography mode", () => {
+    const body = Array.from({ length: 12 }, (_, i) => i < 2
+      ? "I remember building the laboratory with my team."
+      : "The company expanded its work across the region.").join(" ");
+    const issues = analysePublicationReadiness(
+      [chapter({ body })],
+      [source],
+      config({ publicationType: "autobiography", narrativePerspective: "first_person", firstPersonSubjectApproved: true }),
+    );
+    expect(issues.some((item) => item.id.includes("first-person-ratio") && item.severity === "critical")).toBe(true);
+  });
+
+  it("warns when reference metadata lacks a publication date", () => {
+    const datedSource = { ...source, publishedAt: undefined };
+    const ch = chapter({ references: ["Interview source · https://example.com/interview"] });
+    const issues = analysePublicationReadiness([ch], [datedSource], config());
+    expect(issues.some((item) => item.id.includes("incomplete-reference"))).toBe(true);
+  });
+
+  it("requires source linkage for claims marked supported and surfaces unresolved evidence", () => {
+    const ch = chapter({
+      evidenceClaims: [
+        {
+          id: "claim-1",
+          claim: "The company launched the assay.",
+          sourceIndexes: [],
+          verificationStatus: "supported",
+          editorialTreatment: "include",
+        },
+        {
+          id: "claim-2",
+          claim: "The milestone year is disputed.",
+          sourceIndexes: [0],
+          verificationStatus: "conflicting",
+          editorialTreatment: "qualify",
+        },
+      ],
+    });
+    const issues = analysePublicationReadiness([ch], [source], config());
+    expect(issues.some((item) => item.id.includes("claim-without-source") && item.severity === "critical")).toBe(true);
+    expect(issues.some((item) => item.id.includes("evidence-conflicting") && item.severity === "warning")).toBe(true);
+  });
 });
 

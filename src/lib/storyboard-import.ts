@@ -284,15 +284,17 @@ function migrateV2ToV3(payload: any): string[] {
   const storyPages = (payload.chapters || []).map((ch: any, index: number) => ({
     id: ch.id || `migrated-page-${index + 1}`, order: index + 1, title: ch.title || `Page ${index + 1}`,
     body: ch.body || "", imagePrompt: ch.imagePrompt, imageUrl: ch.imageUrl,
-    images: ch.images, imageLayout: ch.imageLayout, references: ch.references, notes: ch.notes,
+    images: ch.images, imageLayout: ch.imageLayout, references: ch.references, evidenceClaims: ch.evidenceClaims, notes: ch.notes,
   }));
   payload.bookStructure = {
     schema: "resonance-book-structure@1",
     cover: { title: payload.title || payload.config?.topic || storyPages[0]?.title || "Untitled Project", imageUrl: payload.referenceImage || null },
     storyPages, chapters: [],
     sourceNotes: (payload.sources || []).filter((source: any) => source?.status === "ready").map((source: any) => ({
-      id: source.id || source.title || "source", title: source.title || "Source", url: source.url,
-      provider: source.provider, retrievedAt: source.retrievedAt, contentHash: source.contentHash, verified: source.verified,
+      id: source.id || source.title || "source", title: source.title || "Source", url: source.canonicalUrl || source.url,
+      provider: source.provider, creator: source.creator, publishedAt: source.publishedAt,
+      relevantTimestamp: source.relevantTimestamp, retrievedAt: source.retrievedAt,
+      contentHash: source.contentHash, verified: source.verified,
     })),
     targetStoryPages: payload.config?.targetStoryPages,
   };

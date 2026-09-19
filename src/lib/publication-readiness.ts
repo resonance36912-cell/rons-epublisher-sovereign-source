@@ -49,6 +49,7 @@ export function computeManuscriptRevision(chapters: SlideChapter[]): string {
     ch.id,
     (ch.title || "").trim(),
     (ch.body || "").replace(/\s+/g, " ").trim(),
+    JSON.stringify(ch.evidenceClaims || []),
     ...(ch.references || []).map((ref) => ref.trim()),
   ].join("\u241f")).join("\u241e");
   return "rev-" + fnv1a(canonical) + "-" + chapters.length;
@@ -78,6 +79,30 @@ const TRANSCRIPT_ARTIFACT_RE = /\b(good\s+(?:morning|afternoon|evening)|welcome\
 const SPEAKER_LABEL_RE = /^(?:host|interviewer|guest|speaker\s*\d+|q|a)\s*:\s*/im;
 const TIMECODE_RE = /(?:^|\n)\s*(?:\[)?\d{1,2}:\d{2}(?::\d{2})?(?:\])?\s*/m;
 const SEARCH_PLACEHOLDER_RE = /^(?:search|query|google search|youtube search)\s*[:—-]|\bsite:[^\s]+\b/i;
+const INTERVIEWER_MARKER_RE = /\b(my guest|welcome to|this week(?:'|’)s episode|tell me about|joining us today|the time is exactly)\b/i;
+const SENSITIVE_CONTENT_RE = /\b(killed|murdered|death|died|violence|assault|abuse|suicide|cancer|diagnosed|minor|child(?:ren)? aged?)\b/i;
+
+function ngramCoverage(text: string, source: string, size = 8): number {
+  const words = text.toLowerCase().match(/[a-z0-9'’-]+/g) || [];
+  const sourceWords = source.toLowerCase().match(/[a-z0-9'’-]+/g) || [];
+  if (words.length < size || sourceWords.length < size) return 0;
+  const sourceGrams = new Set<string>();
+  for (let i = 0; i <= sourceWords.length - size; i += 1) sourceGrams.add(sourceWords.slice(i, i + size).join(" "));
+  let matched = 0;
+  let total = 0;
+  for (let i = 0; i <= words.length - size; i += 1) {
+    total += 1;
+    if (sourceGrams.has(words.slice(i, i + size).join(" "))) matched += 1;
+  }
+  return total ? matched / total : 0;
+}
+
+function firstPersonSentenceRatio(text: string): number {
+  const sentences = text.split(/[.!?]+/).map((s) => s.trim()).filter(Boolean);
+  if (sentences.length === 0) return 0;
+  const firstPerson = sentences.filter((s) => /\b(I|me|my|mine|myself|we|our|ours|us)\b/i.test(s)).length;
+  return firstPerson / sentences.length;
+}
 
 function makeIssue(
   category: ReadinessCategory,
@@ -234,6 +259,59 @@ export function analysePublicationReadiness(
       ));
     }
 
+    if (INTERVIEWER_MARKER_RE.test(body)) {
+      issues.push(makeIssue(
+        "editorial_quality", "critical", "interviewer-marker", "Interviewer language leaked into the chapter",
+        "The manuscript contains interviewer or programme markers that are incompatible with finished narrative prose.",
+        "Remove the interviewer framing or convert it into explicit attribution before publication.",
+        { chapterId: ch.id, chapterIndex: index + 1, evidence: evidenceSnippet(body, INTERVIEWER_MARKER_RE) },
+      ));
+    }
+
+    if (config.publicationType === "autobiography" && config.narrativePerspective === "first_person") {
+      const ratio = firstPersonSentenceRatio(body);
+      if (wordCount(body) >= 40 && ratio < 0.9) {
+        issues.push(makeIssue(
+          "attribution", "critical", "first-person-ratio", "Autobiography is not consistently first-person",
+          "Only " + Math.round(ratio * 100) + "% of narrative sentences contain first-person language.",
+          "Rewrite the chapter into subject-approved first-person narrative or relabel the work as biography/profile.",
+          { chapterId: ch.id, chapterIndex: index + 1 },
+        ));
+      }
+    }
+
+    if (SENSITIVE_CONTENT_RE.test(body)) {
+      issues.push(makeIssue(
+        "attribution", "warning", "sensitive-content", "Sensitive third-party content requires confirmation",
+        "The chapter includes death, violence, health, abuse, or minor-related material that should not pass silently into publication.",
+        "Require explicit author confirmation, verify necessity and attribution, and consider anonymising third parties.",
+        { chapterId: ch.id, chapterIndex: index + 1, evidence: evidenceSnippet(body, SENSITIVE_CONTENT_RE) },
+      ));
+    }
+
+    const years = Array.from(body.matchAll(/\b(19\d{2}|20\d{2})\b/g)).map((match) => Number(match[1]));
+    if (years.some((year, i) => i > 0 && year < years[i - 1])) {
+      issues.push(makeIssue(
+        "structure", "warning", "chronology-regression", "Chronology moves backwards inside the chapter",
+        "Explicit calendar years appear out of order: " + years.join(" → ") + ".",
+        "Confirm the intended flashback structure or reorder the dated events chronologically.",
+        { chapterId: ch.id, chapterIndex: index + 1 },
+      ));
+    }
+
+    for (const source of readySources) {
+      const coverage = ngramCoverage(body, source.content || "");
+      if (coverage > 0.6) {
+        issues.push(makeIssue(
+          "source_integrity", "critical", "verbatim-source-" + source.id, "Chapter is predominantly verbatim from one source",
+          Math.round(coverage * 100) + "% of eight-word sequences match “" + source.title + "”.",
+          "Rewrite from extracted facts and attributed quotations. A chapter over 60% verbatim from one source must not publish.",
+          { chapterId: ch.id, chapterIndex: index + 1 },
+        ));
+        break;
+      }
+    }
+
     const paragraphs = body.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
     if (wordCount(body) >= 180 && paragraphs.length <= 1) {
       issues.push(makeIssue(
@@ -271,6 +349,55 @@ export function analysePublicationReadiness(
         "Replace it with the creator/publisher, source title, date when known, canonical location, and relevant timestamp/section.",
         { chapterId: ch.id, chapterIndex: index + 1, evidence: badRef },
       ));
+    }
+
+    if (evidenceRequired && /Premium editorial transformation:/i.test(ch.notes || "") && !(ch.evidenceClaims?.length)) {
+      issues.push(makeIssue(
+        "source_integrity", "warning", "evidence-ledger-missing", "Premium chapter has no structured evidence ledger",
+        "The chapter was editorially transformed, but no claim-level evidence record was returned.",
+        "Regenerate or review the chapter so retained claims can be traced to source records and timestamps.",
+        { chapterId: ch.id, chapterIndex: index + 1 },
+      ));
+    }
+    for (const claim of ch.evidenceClaims || []) {
+      if (claim.verificationStatus === "supported" && claim.sourceIndexes.length === 0) {
+        issues.push(makeIssue(
+          "source_integrity", "critical", "claim-without-source-" + (claim.id || fnv1a(claim.claim)),
+          "Claim marked supported without a source",
+          "A structured evidence claim is marked supported but has no source index.",
+          "Attach supporting source evidence or change the verification status to unresolved.",
+          { chapterId: ch.id, chapterIndex: index + 1, evidence: claim.claim },
+        ));
+      }
+      if (claim.verificationStatus === "conflicting" || claim.verificationStatus === "unresolved") {
+        issues.push(makeIssue(
+          "factual_consistency", "warning", "evidence-" + claim.verificationStatus + "-" + (claim.id || fnv1a(claim.claim)),
+          claim.verificationStatus === "conflicting" ? "Evidence conflict requires editorial treatment" : "Unresolved evidence claim",
+          "The evidence ledger marks this claim as " + claim.verificationStatus + ".",
+          claim.editorialTreatment === "omit"
+            ? "Keep the claim out of publication prose unless evidence is resolved."
+            : "Attribute or qualify the claim explicitly; do not silently resolve the uncertainty.",
+          { chapterId: ch.id, chapterIndex: index + 1, evidence: claim.claim },
+        ));
+      }
+    }
+
+    for (const ref of ch.references || []) {
+      const linkedSource = readySources.find((source) =>
+        ref.toLowerCase().includes((source.title || "").toLowerCase())
+        || (!!source.url && ref.includes(source.url))
+        || (!!source.canonicalUrl && ref.includes(source.canonicalUrl))
+      );
+      const hasUrl = /https?:\/\//i.test(ref) || !!linkedSource?.url || !!linkedSource?.canonicalUrl;
+      const hasDate = /\b(?:19|20)\d{2}\b/.test(ref) || !!linkedSource?.publishedAt;
+      if (!hasUrl || !hasDate) {
+        issues.push(makeIssue(
+          "source_integrity", "warning", "incomplete-reference-" + fnv1a(ref), "Reference metadata is incomplete",
+          "“" + ref + "” is missing " + [!hasUrl ? "a canonical URL" : "", !hasDate ? "a publication/recording date" : ""].filter(Boolean).join(" and ") + ".",
+          "Store title, creator/publisher, canonical URL, publication/recording date, accessed date, and relevant timestamp/section when available.",
+          { chapterId: ch.id, chapterIndex: index + 1, evidence: ref },
+        ));
+      }
     }
 
     if (config.requireStoryPageImage && !ch.imageUrl && !(ch.images && ch.images.length > 0)) {
@@ -342,8 +469,9 @@ export function unresolvedPublicationIssues(
   config: StoryConfig,
 ): PublicationReadinessIssue[] {
   const dismissals = config.readinessDismissals || {};
+  const revision = computeManuscriptRevision(chapters);
   return analysePublicationReadiness(chapters, sources, config)
-    .filter((item) => !dismissals[item.id]?.trim());
+    .filter((item) => !dismissals[item.id + "@" + revision]?.trim());
 }
 
 export function summarisePublicationReadiness(issues: PublicationReadinessIssue[]) {

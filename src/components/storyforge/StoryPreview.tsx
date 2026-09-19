@@ -153,9 +153,30 @@ export function StoryPreview() {
     }
   }, [sources, config, setChapters, toast, regenRequestId]);
 
-  const allReferences = sources
-    .filter((s) => s.type !== "file" && s.title)
-    .map((s) => s.title);
+  const allReferences = Array.from(new Set(
+    sources
+      .filter((s) => s.title && s.status === "ready" && (s.type !== "search" || !!s.canonicalUrl || !!s.url))
+      .map((s) => [
+        s.creator?.trim(),
+        s.title.trim(),
+        s.publishedAt?.trim(),
+        s.canonicalUrl || s.url,
+        s.relevantTimestamp?.trim() ? `relevant section/time: ${s.relevantTimestamp.trim()}` : undefined,
+      ].filter(Boolean).join(" · "))
+      .filter(Boolean),
+  ));
+
+  const publicationLabel = ({
+    profile: "biographical profile",
+    biography: "biography",
+    autobiography: "autobiography",
+    interview_collection: "interview collection",
+    educational_guide: "educational guide",
+    other: "publication",
+  } as const)[config.publicationType || "profile"];
+  const tone = (config.tone || "professional").trim();
+  const article = /^[aeiou]/i.test(tone) ? "An" : "A";
+  const publicationDescription = `${article} ${tone} ${publicationLabel}`;
 
   const hasRefs = allReferences.length > 0;
   const totalSlides = chapters.length + 1 + (hasRefs ? 1 : 0);
@@ -246,7 +267,7 @@ export function StoryPreview() {
             isFullscreen={isFullscreen}
             deck={{
               title: config.topic || "Your Story",
-              subtitle: `A ${config.tone} ${config.theme} storybook`,
+              subtitle: publicationDescription,
               chapters,
               sources,
             }}
@@ -274,8 +295,7 @@ export function StoryPreview() {
                 {config.topic || "Your Story"}
               </h1>
               <p className="text-muted-foreground text-base">
-                A <span className="text-accent">{config.tone}</span>{" "}
-                <span className="text-primary">{config.theme}</span> storybook
+                {publicationDescription}
               </p>
             </div>
 
@@ -296,7 +316,7 @@ export function StoryPreview() {
                   body={ch.body}
                   references={ch.references}
                   sources={sources}
-                  className="text-sm leading-[1.8] text-foreground/75 space-y-3"
+                  className="text-[18px] leading-[1.8] text-foreground/80 space-y-4"
                 />
               </div>
             ))}
@@ -369,8 +389,7 @@ export function StoryPreview() {
                           {config.topic || "Your Story"}
                         </h1>
                         <p className="text-muted-foreground text-base md:text-lg">
-                          A <span className="text-accent">{config.tone}</span>{" "}
-                          <span className="text-primary">{config.theme}</span> storybook
+                          {publicationDescription}
                         </p>
                       </div>
                       <motion.div

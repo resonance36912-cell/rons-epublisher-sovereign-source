@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import type { Source, SlideChapter, StoryConfig } from "@/components/storyforge/StoryForgeContext";
+import type { ChapterEvidenceClaim, Source, SlideChapter, StoryConfig } from "@/components/storyforge/StoryForgeContext";
 import { DEFAULT_IMAGE_DAILY_LIMIT, getUsageLimit } from "@/lib/usage-limits";
 import {
   beginCorrelationScope,
@@ -560,7 +560,7 @@ export async function generateStoryboard(
   config: StoryConfig,
   onProgress?: (update: StoryboardProgress) => void
 ): Promise<SlideChapter[]> {
-  const readySources = (sources || []).filter((source) => source.content?.trim() && source.status === "ready");
+  const readySources = (sources || []).filter((source) => source.content?.trim() && source.status === "ready" && !(source.type === "search" && !source.canonicalUrl && !source.url));
   if (config.researchBasis === "topic_only" && readySources.length === 0) {
     const requestId = `topic-only-${Date.now()}`;
     onProgress?.({ message: "Creating an explicitly unresearched topic-only draft…", percent: 80, requestId });
@@ -571,6 +571,13 @@ export async function generateStoryboard(
     }));
     onProgress?.({ message: "Topic-only draft ready — factual verification required", percent: 100, requestId });
     return chapters;
+  }
+  if (readySources.length === 0) {
+    const requestId = `evidence-missing-${Date.now()}`;
+    throw new StoryboardError(
+      "No citable evidence source is ready. Search-query placeholders are discovery aids, not manuscript evidence. Verify or attach an actual source before generating an evidence-grounded publication.",
+      requestId,
+    );
   }
   if (OPEN_NOVA_LOCAL_ONLY) {
     const requestId = `local-${Date.now()}`;
@@ -639,9 +646,24 @@ export async function generateStoryboard(
           prompt,
           allowCloud: getFreeCloudQualityEnabled(),
           timeoutMs: config.visualQuality === "storyboard_pro" ? 150_000 : 120_000,
-          system: `You are the Resonance ePublisher premium manuscript editor and storyboard director. Use ONLY the supplied source excerpts and baseline chapters. Preserve the exact story-page count and the factual meaning of the evidence. Never invent facts, dates, names, quotations, dialogue, emotions, adversity, achievements, causal claims, or events. Transform source transcripts into polished publication prose: remove broadcast housekeeping, greetings, repeated interviewer questions, time announcements, and conversational filler unless editorially necessary; preserve meaningful direct quotations only when supported and attribute them to the correct speaker. Never convert an interviewer's words into the subject's memories. Publication type: ${config.publicationType || "profile"}; perspective: ${config.narrativePerspective || "third_person"}; audience: ${config.audience || "general"}. First-person autobiography is permitted only when firstPersonSubjectApproved is true; otherwise use third-person narration and do not create first-person memory claims. If sources conflict or a name, age, company, date, place, or term is uncertain, preserve the uncertainty or qualify it rather than choosing or silently correcting. Give every chapter a distinct descriptive heading based on its actual supported content; do not use repeated titles or generic Part N headings. Build readable paragraphs, transitions, coherent openings and conclusions, while keeping all factual content traceable to supplied evidence. Return sourceIndexes as zero-based indexes into sourceExcerpts for the evidence actually used by each chapter. Quality profile: ${config.visualQuality || "premium"}. Every imagePrompt must be a professional production brief grounded in that chapter: subject/action, environment, composition, camera/lens language, lighting, colour palette, material/texture detail, mood, and continuity anchors; no invented events, text overlays, watermarks, or contradictory anatomy. For storyboard_pro, emphasize recurring identity, wardrobe/environment continuity, deliberate shot variety, and editorial sequencing. Return JSON only as {"chapters":[{"title":string,"body":string,"imagePrompt":string,"sourceIndexes":number[]}]}. No markdown fences.`,
+          system: `You are the Resonance ePublisher premium manuscript editor and storyboard director. Use ONLY the supplied source excerpts and baseline chapters. Preserve the exact story-page count and the factual meaning of the evidence. Never invent facts, dates, names, quotations, dialogue, emotions, adversity, achievements, causal claims, or events. Transform source transcripts into polished publication prose: remove broadcast housekeeping, greetings, repeated interviewer questions, time announcements, and conversational filler unless editorially necessary; preserve meaningful direct quotations only when supported and attribute them to the correct speaker. Never convert an interviewer's words into the subject's memories. Publication type: ${config.publicationType || "profile"}; perspective: ${config.narrativePerspective || "third_person"}; audience: ${config.audience || "general"}. First-person autobiography is permitted only when firstPersonSubjectApproved is true; otherwise use third-person narration and do not create first-person memory claims. If sources conflict or a name, age, company, date, place, or term is uncertain, preserve the uncertainty or qualify it rather than choosing or silently correcting. Build the manuscript across ALL supplied sources by theme and chronology; do not map one source to one chapter. Merge corroborating evidence where appropriate and keep conflicting evidence visibly qualified. Give every chapter a distinct descriptive heading based on its actual supported content; do not use repeated titles or generic Part N headings. Build readable paragraphs, transitions, coherent openings and conclusions, while keeping all factual content traceable to supplied evidence. If evidence is thin, write a concise supported treatment rather than padding. Before writing each chapter, construct a compact evidence ledger and return it with the chapter. Each evidenceClaims entry must contain the retained claim, speaker when known, zero-based sourceIndexes, eventDate when explicitly supported, verificationStatus (supported, conflicting, or unresolved), and editorialTreatment (include, attribute, qualify, or omit). Never mark a claim supported merely because it appears in the baseline draft; support must come from sourceExcerpts. Return sourceIndexes as zero-based indexes into sourceExcerpts for the evidence actually used by each chapter. Quality profile: ${config.visualQuality || "premium"}. Every imagePrompt must be a professional production brief grounded in that chapter: subject/action, environment, composition, camera/lens language, lighting, colour palette, material/texture detail, mood, and continuity anchors; no invented events, text overlays, watermarks, or contradictory anatomy. For storyboard_pro, emphasize recurring identity, wardrobe/environment continuity, deliberate shot variety, and editorial sequencing. Return JSON only as {"chapters":[{"title":string,"body":string,"imagePrompt":string,"sourceIndexes":number[],"evidenceClaims":[{"claim":string,"speaker":string|null,"sourceIndexes":number[],"eventDate":string|null,"verificationStatus":"supported"|"conflicting"|"unresolved","editorialTreatment":"include"|"attribute"|"qualify"|"omit"}]}]}. No markdown fences.`,
         });
-        const parsed = parseHybridJson<{ chapters?: Array<{ title?: string; body?: string; imagePrompt?: string; sourceIndexes?: number[] }> }>(refined.text);
+        type RefinedEvidenceClaim = {
+          claim?: string;
+          speaker?: string | null;
+          sourceIndexes?: number[];
+          eventDate?: string | null;
+          verificationStatus?: "supported" | "conflicting" | "unresolved";
+          editorialTreatment?: "include" | "attribute" | "qualify" | "omit";
+        };
+        type RefinedChapter = {
+          title?: string;
+          body?: string;
+          imagePrompt?: string;
+          sourceIndexes?: number[];
+          evidenceClaims?: RefinedEvidenceClaim[];
+        };
+        const parsed = parseHybridJson<{ chapters?: RefinedChapter[] }>(refined.text);
         const candidate = parsed?.chapters;
         const valid = Array.isArray(candidate) && candidate.length === chapters.length && candidate.every((chapter) =>
           typeof chapter?.title === "string" && chapter.title.trim().length > 0 &&
@@ -656,12 +678,35 @@ export async function generateStoryboard(
             const chapterReferences = sourceIndexes.length
               ? sourceIndexes.map((sourceIndex) => formatSourceReference(usable[sourceIndex]))
               : base.references;
+            const evidenceClaims: ChapterEvidenceClaim[] = Array.isArray(candidate[index].evidenceClaims)
+              ? candidate[index].evidenceClaims!
+                .filter((claim) => typeof claim?.claim === "string" && claim.claim.trim().length > 0)
+                .map((claim, claimIndex) => {
+                  const claimSourceIndexes = Array.from(new Set((claim.sourceIndexes || [])
+                    .filter((value) => Number.isInteger(value) && value >= 0 && value < usable.length)));
+                  const claimSources = claimSourceIndexes.map((sourceIndex) => usable[sourceIndex]);
+                  return {
+                    id: `${base.id}-evidence-${claimIndex + 1}`,
+                    claim: claim.claim!.trim(),
+                    speaker: claim.speaker?.trim() || undefined,
+                    sourceIndexes: claimSourceIndexes,
+                    sourceIds: claimSources.map((source) => source.id),
+                    sourceTitles: claimSources.map((source) => source.title),
+                    timestamps: claimSources.map((source) => source.relevantTimestamp).filter((value): value is string => Boolean(value)),
+                    eventDate: claim.eventDate?.trim() || undefined,
+                    sourceDate: claimSources.map((source) => source.publishedAt).find((value): value is string => Boolean(value)),
+                    verificationStatus: claim.verificationStatus || (claimSourceIndexes.length ? "supported" : "unresolved"),
+                    editorialTreatment: claim.editorialTreatment || (claimSourceIndexes.length ? "include" : "qualify"),
+                  };
+                })
+              : [];
             return {
               ...base,
               title: candidate[index].title!.trim(),
               body: candidate[index].body!.trim(),
               imagePrompt: candidate[index].imagePrompt?.trim() || base.imagePrompt,
               references: chapterReferences,
+              evidenceClaims,
               notes: `${base.notes || ""} Premium editorial transformation: ${refined.provider} (${refined.route || "governed"}); evidence indexes retained where supplied.`.trim(),
             };
           });

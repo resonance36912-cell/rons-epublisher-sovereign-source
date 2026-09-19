@@ -49,13 +49,21 @@ export function PublicationReadinessPanel({
     [chapters, sources, config],
   );
   const dismissals = config.readinessDismissals || {};
+  const currentRevision = useMemo(() => computeManuscriptRevision(chapters), [chapters]);
   const issues = useMemo(
-    () => allIssues.filter((item) => !dismissals[item.id]?.trim()),
-    [allIssues, dismissals],
+    () => allIssues.filter((item) => !dismissals[item.id + "@" + currentRevision]?.trim()),
+    [allIssues, dismissals, currentRevision],
   );
   const dismissedCount = allIssues.length - issues.length;
   const summary = useMemo(() => summarisePublicationReadiness(issues), [issues]);
-  const currentRevision = useMemo(() => computeManuscriptRevision(chapters), [chapters]);
+  const evidenceSummary = useMemo(() => {
+    const claims = chapters.flatMap((chapter) => chapter.evidenceClaims || []);
+    return {
+      total: claims.length,
+      unresolved: claims.filter((claim) => claim.verificationStatus !== "supported").length,
+      sourced: claims.filter((claim) => claim.sourceIndexes.length > 0).length,
+    };
+  }, [chapters]);
   const approved = config.approvedManuscriptRevision === currentRevision;
 
   const grouped = useMemo(() => {
@@ -73,7 +81,7 @@ export function PublicationReadinessPanel({
     if (!reason?.trim()) return;
     setConfig((c) => ({
       ...c,
-      readinessDismissals: { ...(c.readinessDismissals || {}), [item.id]: reason.trim() },
+      readinessDismissals: { ...(c.readinessDismissals || {}), [item.id + "@" + currentRevision]: reason.trim() },
     }));
   };
 
@@ -124,8 +132,14 @@ export function PublicationReadinessPanel({
             </p>
             <p className="text-[11px] text-muted-foreground mt-1">
               {summary.critical} critical · {summary.warning} warning · {summary.info} note
-              {dismissedCount > 0 ? " · " + dismissedCount + " dismissed with reason" : ""}
+              {dismissedCount > 0 ? " · " + dismissedCount + " dismissed with reason for this revision" : ""}
             </p>
+            {evidenceSummary.total > 0 && (
+              <p className="text-[10px] text-muted-foreground mt-1">
+                Evidence ledger: {evidenceSummary.sourced}/{evidenceSummary.total} claims source-linked
+                {evidenceSummary.unresolved > 0 ? " · " + evidenceSummary.unresolved + " conflicting/unresolved" : " · all marked supported"}
+              </p>
+            )}
           </div>
         </button>
         <button type="button" onClick={() => setExpanded((v) => !v)} className="p-1 text-muted-foreground">
