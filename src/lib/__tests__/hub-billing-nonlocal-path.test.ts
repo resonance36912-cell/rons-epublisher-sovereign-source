@@ -12,11 +12,10 @@ describe("hosted billing lookup remains reachable outside sovereign-local mode",
     vi.doMock("@/lib/sovereign-mode", () => ({ OPEN_NOVA_LOCAL_ONLY: false }));
     const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify({
       app: "epublisher",
-      skus: [
-        { sku: "lifetime_starter", amount: 99, currency: "ZAR" },
-        { sku: "lifetime_creator", amount: 249, currency: "ZAR" },
-        { sku: "lifetime_pro", amount: 499, currency: "ZAR" },
-        { sku: "lifetime_business", amount: 699, currency: "ZAR" },
+      packs: [
+        { id: "epublisher_starter_pack", amount: 99, currency: "ZAR", available: false },
+        { id: "epublisher_creator_pack", amount: 299, currency: "ZAR", available: false },
+        { id: "epublisher_studio_pack", amount: 699, currency: "ZAR", available: false },
       ],
     }), { status: 200, headers: { "Content-Type": "application/json" } }));
     const { runHubPricingCheck } = await import("@/lib/hub-pricing-check");

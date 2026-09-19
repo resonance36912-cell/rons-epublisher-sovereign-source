@@ -20,13 +20,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { HUB_URL, APP_KEY } from "@/lib/hub";
-import { LOCAL_PLAN_PRICES, type PlanKey } from "@/lib/hub-pricing-check";
+import { HUB_URL, APP_KEY, EPUBLISHER_PACKS, type HubPackId } from "@/lib/hub";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 type Row = {
-  plan: PlanKey;
+  plan: HubPackId;
   local: number;
   hub: number | null;
   currency: string;
@@ -36,7 +35,7 @@ type Row = {
 
 type DiffPayload = {
   rows: Row[];
-  missingOnHub: PlanKey[];
+  missingOnHub: HubPackId[];
   extraOnHub: string[];
 };
 
@@ -63,7 +62,12 @@ type HistoryRow = {
 };
 
 const CATALOG_URL = `${HUB_URL}/api/billing/catalog?app=${APP_KEY}`;
-const PLAN_KEYS = Object.keys(LOCAL_PLAN_PRICES) as PlanKey[];
+const PLAN_KEYS = EPUBLISHER_PACKS.map((pack) => pack.id) as HubPackId[];
+
+function localPackAmount(id: HubPackId): number {
+  const pack = EPUBLISHER_PACKS.find((entry) => entry.id === id);
+  return pack ? Number(pack.price.replace(/[^0-9]/g, "")) : 0;
+}
 
 type StatusFilter = "all" | "ok" | "error";
 type MismatchFilter =
@@ -76,23 +80,23 @@ type MismatchFilter =
 
 function computeDiff(json: any): { diff: DiffPayload; allMatch: boolean } {
   const hubMap = new Map<string, { amount: number; currency: string }>();
-  for (const p of json?.plans ?? []) {
-    if (p?.plan && p?.period)
-      hubMap.set(`${p.plan}_${p.period}`, {
+  for (const p of json?.packs ?? []) {
+    if (p?.id)
+      hubMap.set(String(p.id), {
         amount: Number(p.amount),
         currency: String(p.currency),
       });
   }
   const rows: Row[] = PLAN_KEYS.map((key) => {
-    const local = LOCAL_PLAN_PRICES[key];
+    const local = localPackAmount(key);
     const hub = hubMap.get(key);
     return {
       plan: key,
-      local: local.amount,
+      local,
       hub: hub ? hub.amount : null,
-      currency: local.currency,
+      currency: "ZAR",
       hubCurrency: hub ? hub.currency : null,
-      match: !!hub && hub.amount === local.amount && hub.currency === local.currency,
+      match: !!hub && hub.amount === local && hub.currency === "ZAR",
     };
   });
   const localKeys = new Set<string>(PLAN_KEYS);
@@ -102,7 +106,7 @@ function computeDiff(json: any): { diff: DiffPayload; allMatch: boolean } {
   return { diff: { rows, missingOnHub, extraOnHub }, allMatch };
 }
 
-function hasPlanIssue(row: HistoryRow, plan: PlanKey): boolean {
+function hasPlanIssue(row: HistoryRow, plan: HubPackId): boolean {
   const diffRows: Row[] | undefined = row.diff?.rows;
   if (!diffRows) return false;
   const found = diffRows.find((r) => r.plan === plan);
@@ -143,7 +147,7 @@ export function AdminHubCatalogProbe() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
-  const [planFilter, setPlanFilter] = useState<PlanKey | "all">("all");
+  const [planFilter, setPlanFilter] = useState<HubPackId | "all">("all");
   const [mismatchFilter, setMismatchFilter] = useState<MismatchFilter>("all");
   const [showFilters, setShowFilters] = useState(false);
 
@@ -224,13 +228,13 @@ export function AdminHubCatalogProbe() {
           error: `HTTP ${res.status} — ${text.slice(0, 200)}`,
           raw: json ?? text,
         };
-      } else if (!json || !Array.isArray(json.plans)) {
+      } else if (!json || !Array.isArray(json.packs)) {
         outcome = {
           ok: false,
           allMatch: false,
           status: res.status,
           ms,
-          error: "Response is not the expected { app, plans:[] } shape.",
+          error: "Response is not the expected { app, packs:[] } shape.",
           raw: json ?? text,
         };
       } else {
@@ -498,7 +502,7 @@ export function AdminHubCatalogProbe() {
               <label className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
                 App plan
               </label>
-              <Select value={planFilter} onValueChange={(v) => setPlanFilter(v as PlanKey | "all")}>
+              <Select value={planFilter} onValueChange={(v) => setPlanFilter(v as HubPackId | "all")}>
                 <SelectTrigger className="h-8 text-xs">
                   <SelectValue placeholder="All plans" />
                 </SelectTrigger>

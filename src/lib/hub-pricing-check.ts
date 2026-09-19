@@ -1,15 +1,15 @@
-// Runtime sanity check: compare locally hardcoded lifetime unlock prices
-// against the Resonance Hub billing catalog. Surfaces mismatches via
-// console warnings, analytics events, and an optional UI banner so a
-// stale spoke catalog never silently disagrees with the Hub PayFast amount.
+// Runtime sanity check: compare the public ePublisher pack prices against
+// the Resonance Hub billing catalog. Surfaces mismatches via console warnings,
+// analytics events, and an optional UI banner so a stale spoke catalog never
+// silently disagrees with the Hub-authoritative pack amount.
 
-import { HUB_URL, APP_KEY } from "@/lib/hub";
+import { HUB_URL, APP_KEY, EPUBLISHER_PACKS, type HubPackId } from "@/lib/hub";
 import { trackEvent } from "@/lib/analytics";
 import { OPEN_NOVA_LOCAL_ONLY } from "@/lib/sovereign-mode";
 
 /**
- * Source-of-truth (local) prices shown in this app. ZAR, once-off.
- * Keys use the SKU that the Hub receives at checkout.
+ * Legacy lifetime-price table retained only for historical audit helpers.
+ * The active runtime parity check below uses EPUBLISHER_PACKS.
  */
 export const LOCAL_PLAN_PRICES = {
   lifetime_starter:  { amount: 99,  currency: "ZAR", period: "once" as const },
@@ -21,21 +21,26 @@ export const LOCAL_PLAN_PRICES = {
 export type PlanKey = keyof typeof LOCAL_PLAN_PRICES;
 
 export interface PriceMismatch {
-  plan: PlanKey;
+  plan: PlanKey | HubPackId;
   local: number;
   hub: number;
   currency: string;
 }
 
 interface HubCatalogEntry {
-  sku: string;           // e.g. "lifetime_creator"
-  amount: number;        // ZAR major units
+  id: HubPackId;
+  amount: number;
   currency: string;
+  available?: boolean;
 }
 
 interface HubCatalogResponse {
   app: string;
-  skus: HubCatalogEntry[];
+  packs: HubCatalogEntry[];
+}
+
+function displayedPackAmount(price: string): number {
+  return Number(price.replace(/[^0-9]/g, ""));
 }
 
 const CATALOG_URL = `${HUB_URL}/api/billing/catalog?app=${APP_KEY}`;
@@ -86,25 +91,25 @@ export async function runHubPricingCheck(options: { force?: boolean } = {}): Pro
     return [];
   }
 
-  if (!catalog?.skus?.length) {
+  if (!catalog?.packs?.length) {
     sessionStorage.setItem(SESSION_FLAG, "ok");
     return [];
   }
 
   const hubMap = new Map<string, HubCatalogEntry>();
-  for (const p of catalog.skus) hubMap.set(p.sku, p);
+  for (const pack of catalog.packs) hubMap.set(pack.id, pack);
 
   const mismatches: PriceMismatch[] = [];
-  for (const key of Object.keys(LOCAL_PLAN_PRICES) as PlanKey[]) {
-    const local = LOCAL_PLAN_PRICES[key];
-    const hub = hubMap.get(key);
+  for (const pack of EPUBLISHER_PACKS) {
+    const localAmount = displayedPackAmount(pack.price);
+    const hub = hubMap.get(pack.id);
     if (!hub) continue;
-    if (hub.amount !== local.amount || hub.currency !== local.currency) {
+    if (hub.amount !== localAmount || hub.currency !== "ZAR") {
       mismatches.push({
-        plan: key,
-        local: local.amount,
+        plan: pack.id,
+        local: localAmount,
         hub: hub.amount,
-        currency: local.currency,
+        currency: "ZAR",
       });
     }
   }
