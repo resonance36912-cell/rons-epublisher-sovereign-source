@@ -105,10 +105,22 @@ describe("publication readiness", () => {
     expect(output.replace(/\n\n/g, " ")).toBe(input);
   });
 
-  it("flags search-query bibliography placeholders", () => {
-    const ch = chapter({ references: ["Search: Ashley biotech interview"] });
+  it("flags and safely removes search-query bibliography placeholders", () => {
+    const ch = chapter({
+      references: [
+        "Search: Ashley biotech interview",
+        "Publisher · Interview source · 2020 · https://example.com/interview",
+      ],
+    });
     const issues = analysePublicationReadiness([ch], [source], config());
-    expect(issues.some((item) => item.id.includes("search-reference") && item.severity === "critical")).toBe(true);
+    const finding = issues.find((item) => item.id.includes("search-reference"));
+    expect(finding?.severity).toBe("critical");
+    expect(finding?.autofix).toBe("remove_search_reference");
+
+    const fixed = applyReadinessAutofix(ch, "remove_search_reference");
+    expect(fixed.references).toEqual([
+      "Publisher · Interview source · 2020 · https://example.com/interview",
+    ]);
   });
 
   it("hard-fails chapters that are predominantly verbatim from one source", () => {

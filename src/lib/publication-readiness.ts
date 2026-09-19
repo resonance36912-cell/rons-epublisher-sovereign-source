@@ -10,7 +10,7 @@ export type ReadinessCategory =
   | "structure"
   | "presentation"
   | "production";
-export type ReadinessAutofix = "clean_transcript" | "split_paragraphs";
+export type ReadinessAutofix = "clean_transcript" | "split_paragraphs" | "remove_search_reference";
 
 export type PublicationReadinessIssue = {
   id: string;
@@ -347,7 +347,7 @@ export function analysePublicationReadiness(
         "source_integrity", "critical", "search-reference", "Bibliography contains a search-query placeholder",
         "“" + badRef + "” is a search instruction, not an evidence source.",
         "Replace it with the creator/publisher, source title, date when known, canonical location, and relevant timestamp/section.",
-        { chapterId: ch.id, chapterIndex: index + 1, evidence: badRef },
+        { chapterId: ch.id, chapterIndex: index + 1, evidence: badRef, autofix: "remove_search_reference" },
       ));
     }
 
@@ -514,6 +514,12 @@ export function splitDenseParagraphs(text: string, sentencesPerParagraph = 3): s
 export function applyReadinessAutofix(chapter: SlideChapter, fix: ReadinessAutofix): SlideChapter {
   if (fix === "clean_transcript") return { ...chapter, body: cleanTranscriptArtifacts(chapter.body) };
   if (fix === "split_paragraphs") return { ...chapter, body: splitDenseParagraphs(chapter.body) };
+  if (fix === "remove_search_reference") {
+    return {
+      ...chapter,
+      references: (chapter.references || []).filter((ref) => !SEARCH_PLACEHOLDER_RE.test(ref.trim())),
+    };
+  }
   return chapter;
 }
 
