@@ -48,6 +48,7 @@ export function ResearchVerify() {
   const [error, setError] = useState("");
   const [topicOnlyConfirmed, setTopicOnlyConfirmed] = useState(false);
   const [userExcludedUrls, setUserExcludedUrls] = useState<Set<string>>(() => new Set());
+  const recoveryAbortRef = useRef<AbortController | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Enforce the source policy before any network discovery is attempted.
@@ -68,6 +69,7 @@ export function ResearchVerify() {
       runDiscovery();
     }
     return () => {
+      recoveryAbortRef.current?.abort();
       if (pollRef.current) clearInterval(pollRef.current);
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -180,6 +182,9 @@ export function ResearchVerify() {
   };
 
   const handleTranscribe = async () => {
+    recoveryAbortRef.current?.abort();
+    const controller = new AbortController();
+    recoveryAbortRef.current = controller;
     setPhase("transcribing");
     setProgress(0);
     setStatusMsg("Starting research pipeline…");
@@ -204,10 +209,15 @@ export function ResearchVerify() {
 
       const { jobId: newJobId } = await startResearchJob(config.topic, config, userUrls);
 
-      // Poll for progress
+      if (controller.signal.aborted) return;
+      let polling = false;
+      // Poll for progress without overlapping requests.
       pollRef.current = setInterval(async () => {
+        if (polling || controller.signal.aborted) return;
+        polling = true;
         try {
           const status = await getJobStatus(newJobId, false);
+          if (controller.signal.aborted) return;
           setProgress(status.progress || 0);
           setStatusMsg(status.statusMessage || "Processing…");
 
@@ -217,9 +227,12 @@ export function ResearchVerify() {
 
             // Fetch final results
             const finalStatus = await getJobStatus(newJobId, true);
+            if (controller.signal.aborted) return;
+            setProgress(85);
             const recoveredSources = await recoverYouTubeEvidenceSources(finalStatus.processedSources || [], (item) => {
-              setStatusMsg(`Recovering YouTube speech locally (${item.current}/${item.total}): ${item.title}`);
-            });
+              setStatusMsg(`${item.stage || "queued"} — YouTube speech (${item.current}/${item.total}): ${item.title}`);
+            }, controller.signal);
+            if (controller.signal.aborted) return;
             const processedSources = normaliseExtractedSources(config.topic, recoveredSources, discovered, userUrls);
             const fileSources = sources.filter((s) => s.type === "file");
             setSources([...fileSources, ...processedSources]);
@@ -234,13 +247,17 @@ export function ResearchVerify() {
             throw new Error(status.error || "Research pipeline failed");
           }
         } catch (pollErr: any) {
+          if (controller.signal.aborted) return;
           if (pollRef.current) clearInterval(pollRef.current);
           pollRef.current = null;
           toast({ title: "Transcription failed", description: pollErr.message, variant: "destructive" });
           setPhase("review");
+        } finally {
+          polling = false;
         }
       }, 2000);
     } catch (err: any) {
+      if (controller.signal.aborted) return;
       toast({ title: "Transcription failed", description: err.message, variant: "destructive" });
       setPhase("review");
     }
@@ -284,6 +301,9 @@ export function ResearchVerify() {
     setStep(2);
   };
   const recoverMetadataOnlyYouTube = async () => {
+    recoveryAbortRef.current?.abort();
+    const controller = new AbortController();
+    recoveryAbortRef.current = controller;
     setPhase("transcribing");
     setProgress(10);
     setStatusMsg("Preparing local YouTube speech-to-text recovery…");
@@ -292,8 +312,9 @@ export function ResearchVerify() {
       const researchSources = sources.filter((source) => source.type === "search");
       const recovered = await recoverYouTubeEvidenceSources(researchSources, (item) => {
         setProgress(Math.min(90, 15 + Math.round((item.current / Math.max(item.total, 1)) * 70)));
-        setStatusMsg(`Recovering YouTube speech locally (${item.current}/${item.total}): ${item.title}`);
-      });
+        setStatusMsg(`${item.stage || "queued"} — YouTube speech (${item.current}/${item.total}): ${item.title}`);
+      }, controller.signal);
+      if (controller.signal.aborted) return;
       const processed = normaliseExtractedSources(config.topic, recovered, discovered);
       setSources([...nonResearchSources, ...processed]);
       const usable = processed.filter((source) => source.status === "ready").length;
@@ -302,6 +323,7 @@ export function ResearchVerify() {
       setStatusMsg(`${usable} usable evidence source(s); ${unavailable} excluded after extraction.`);
       setPhase("done");
     } catch (err: any) {
+      if (controller.signal.aborted) return;
       setPhase("done");
       toast({ title: "Local YouTube recovery failed", description: err?.message || "Recovery failed", variant: "destructive" });
     }
@@ -475,17 +497,18 @@ export function ResearchVerify() {
             })}
           </div>
           <div className="flex justify-center"><Button variant="destructive" size="sm" onClick={() => {
+            recoveryAbortRef.current?.abort();
             if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
             setPhase("review");
-            toast({ title: "Extraction stopped", description: "No source was promoted to usable evidence by this cancelled run." });
+            toast({ title: "Stopped waiting for extraction", description: "Queued transcription may finish in the background. Retry recovery to reconnect; this stopped run will not update your evidence." });
           }} className="gap-2"><AlertCircle className="w-4 h-4" /> Stop extraction</Button></div>
         </motion.div>
       )}
       {phase === "done" && (
         <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="space-y-4">
           <div className="glass-card p-6 text-center space-y-2">
-            <CheckCircle2 className="w-10 h-10 text-green-400 mx-auto" />
-            <h3 className="text-lg font-semibold">Extraction complete</h3>
+            {usableCount > 0 ? <CheckCircle2 className="w-10 h-10 text-green-400 mx-auto" /> : <AlertCircle className="w-10 h-10 text-amber-400 mx-auto" />}
+            <h3 className="text-lg font-semibold">{usableCount > 0 ? "Extraction complete" : "Extraction failed — no usable evidence"}</h3>
             <p className="text-sm text-muted-foreground">{statusMsg}</p>
             <p className="text-xs text-muted-foreground">Usable means extracted text/captions or locally recovered speech-to-text passed the sovereign relevance and contamination checks. Evidence review is still separate.</p>
             {metadataOnlyCount > 0 && (
