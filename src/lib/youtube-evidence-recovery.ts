@@ -50,9 +50,11 @@ function needsLocalRecovery(source: Source): boolean {
 
 async function requestLocalYouTubeStt(source: Source): Promise<YouTubeSttResponse> {
   const retryableStatuses = new Set([429, 502, 503, 504]);
+  const generalMaxAttempts = 2;
+  const busyMaxAttempts = 8;
   let lastError: Error | null = null;
 
-  for (let attempt = 1; attempt <= 2; attempt += 1) {
+  for (let attempt = 1; attempt <= busyMaxAttempts; attempt += 1) {
     const controller = new AbortController();
     const timer = window.setTimeout(() => controller.abort(), 360_000);
     let response: Response | null = null;
@@ -69,20 +71,35 @@ async function requestLocalYouTubeStt(source: Source): Promise<YouTubeSttRespons
         throw new Error("Local YouTube speech-to-text timed out");
       }
       lastError = error as Error;
-      if (attempt === 2) throw lastError;
+      if (attempt >= generalMaxAttempts) throw lastError;
     } finally {
       window.clearTimeout(timer);
     }
+
+    let retryDelayMs = 400 * attempt;
+    let maxAttempts = generalMaxAttempts;
 
     if (response) {
       const payload = await response.json().catch(() => null) as YouTubeSttResponse | null;
       if (response.ok && payload?.text?.trim()) return payload;
 
-      lastError = new Error(payload?.error || `Local YouTube STT returned HTTP ${response.status}`);
-      if (!retryableStatuses.has(response.status) || attempt === 2) throw lastError;
+      const busy = response.status === 503 && payload?.error === "stt_service_busy";
+      maxAttempts = busy ? busyMaxAttempts : generalMaxAttempts;
+      lastError = new Error(
+        busy
+          ? "Local speech-to-text is busy with another transcription; waiting for capacity."
+          : payload?.error || `Local YouTube STT returned HTTP ${response.status}`,
+      );
+      if (!retryableStatuses.has(response.status) || attempt >= maxAttempts) throw lastError;
+
+      if (busy) {
+        const retryAfter = Number(response.headers?.get?.("Retry-After") || "");
+        const serverDelayMs = Number.isFinite(retryAfter) && retryAfter >= 0 ? retryAfter * 1000 : 0;
+        retryDelayMs = Math.min(10_000, Math.max(serverDelayMs, attempt * 2_000));
+      }
     }
 
-    await new Promise((resolve) => window.setTimeout(resolve, 400));
+    await new Promise((resolve) => window.setTimeout(resolve, retryDelayMs));
   }
 
   throw lastError || new Error("Local YouTube speech-to-text failed");
