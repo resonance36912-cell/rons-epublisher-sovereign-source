@@ -1244,7 +1244,7 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Pricing – 5 SA tiers (preview, full details on /pricing) */}
+      {/* Pricing – Hub-authoritative ePublisher packs (preview, checkout on reson8.life) */}
       <motion.section
         className="container px-6 pb-20"
         onViewportEnter={() => trackEvent("pricing_view")}
@@ -1254,15 +1254,14 @@ export default function Landing() {
           South-African pricing, global publishing
         </h2>
         <p className="text-muted-foreground text-center text-sm mb-10 max-w-xl mx-auto">
-          Start free. Unlock forever with a single once-off payment. All prices in ZAR — once-off credits & project packs, nothing recurring.
+          Start free, then buy a once-off ePublisher pack when you need more projects or production credits. No recurring app fees.
         </p>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 max-w-6xl mx-auto">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 max-w-5xl mx-auto">
           {[
-            { id: "free",     name: "Free",     price: "R0",   per: "forever",  credits: 20,  bundle: "20 starter credits",  tone: "default" },
-            { id: "starter",  name: "Starter",  price: "R99",  per: "once-off", credits: 50,  bundle: "+ 50 credits",        tone: "default" },
-            { id: "creator",  name: "Creator",  price: "R249", per: "once-off", credits: 200, bundle: "+ 200 credits",       tone: "popular" },
-            { id: "pro",      name: "Pro",      price: "R499", per: "once-off", credits: 500, bundle: "+ 500 credits",       tone: "default" },
-            { id: "business", name: "Business", price: "R699", per: "once-off", credits: 900, bundle: "+ 900 credits",       tone: "default" },
+            { id: "free", name: "Free", price: "R0", per: "forever", bundle: "Start creating", tone: "default" },
+            { id: "epublisher_starter_pack", name: "Starter Pack", price: "R99", per: "once-off", bundle: "+ 99 credits", tone: "default" },
+            { id: "epublisher_creator_pack", name: "Creator Pack", price: "R299", per: "once-off", bundle: "+ 299 credits", tone: "popular" },
+            { id: "epublisher_studio_pack", name: "Studio Pack", price: "R699", per: "once-off", bundle: "+ 699 credits", tone: "default" },
           ].map((tier, idx) => (
             <motion.div
               key={tier.id}
@@ -1294,7 +1293,7 @@ export default function Landing() {
                 className={`w-full mt-auto h-8 text-xs ${tier.tone === "popular" ? "glow-primary" : ""}`}
               >
                 <Link to="/pricing" onClick={() => trackEvent("pricing_landing_tier_click", { tier: tier.id })}>
-                  {tier.id === "free" ? "Start Free" : "Unlock"}
+                  {tier.id === "free" ? "Start Free" : "View pack"}
                 </Link>
               </Button>
             </motion.div>
@@ -1304,7 +1303,7 @@ export default function Landing() {
         <div className="text-center mt-6">
           <Button variant="link" asChild className="text-primary">
             <Link to="/pricing" onClick={() => trackEvent("pricing_see_all_click")}>
-              See all plans, pay-as-you-go &amp; credit details →
+              See current ePublisher packs &amp; credit details →
             </Link>
           </Button>
         </div>

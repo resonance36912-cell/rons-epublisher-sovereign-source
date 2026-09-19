@@ -1,19 +1,18 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useHubEntitlement } from "@/hooks/useHubEntitlement";
-import type { Tier } from "@/lib/hub";
 import { OPEN_NOVA_LOCAL_ONLY } from "@/lib/sovereign-mode";
 
 
 /**
  * Legacy tier union — kept as the canonical runtime type so existing
- * `tier === "premium"` capability checks continue to work after the
- * switch to once-off unlocks. The new 5-tier names are exposed
- * alongside via `effectiveTier` and collapse down to this union.
+ * `tier === "premium"` capability checks continue to work while the
+ * Hub transitions billing authority to passes and once-off packs. Effective
+ * capability bands are exposed via `effectiveTier` and collapse to this union.
  */
 export type UserTier = "free" | "standard" | "premium";
 
-/** New 5-tier names used by the pricing page and billing UI. */
+/** Legacy capability bands retained for existing feature gates. */
 export type EffectiveTier =
   | "free"
   | "starter"
@@ -28,6 +27,40 @@ const LEGACY_FROM_EFFECTIVE: Record<EffectiveTier, UserTier> = {
   pro: "premium",
   business: "premium",
 };
+
+const EFFECTIVE_RANK: Record<EffectiveTier, number> = {
+  free: 0,
+  starter: 1,
+  creator: 2,
+  pro: 3,
+  business: 4,
+};
+
+function normalizeHubTier(value: unknown): EffectiveTier | null {
+  switch (value) {
+    case "free": return "free";
+    case "starter": return "starter";
+    case "creator":
+    case "creator_pass": return "creator";
+    case "pro": return "pro";
+    case "business":
+    case "studio_pass": return "business";
+    default: return null;
+  }
+}
+
+function effectiveTierFromPack(value: unknown): EffectiveTier | null {
+  switch (value) {
+    case "starter_pack": return "starter";
+    case "creator_pack": return "creator";
+    case "studio_pack": return "business";
+    default: return null;
+  }
+}
+
+function maxEffectiveTier(a: EffectiveTier, b: EffectiveTier | null): EffectiveTier {
+  return b && EFFECTIVE_RANK[b] > EFFECTIVE_RANK[a] ? b : a;
+}
 
 /** Map purchase price_ids to the effective tier. Subscriptions are retired. */
 function resolveEffectiveTier(purchasePriceIds: string[]): EffectiveTier {
@@ -79,12 +112,22 @@ export function useUserTier() {
     ? "business"
     : resolveEffectiveTier((purchases ?? []).map((p) => p.price_id));
 
+  const creditsRemaining = Math.max(0, Number(hubEnt?.creditsRemaining ?? 0) || 0);
+  const hasPaidCredits = creditsRemaining > 0;
+
   if (
     hubEnt?.source === "hub" &&
     hubEnt.tier &&
     (hubEnt.status === "active" || hubEnt.status === "trialing")
   ) {
-    effectiveTier = hubEnt.tier as EffectiveTier;
+    effectiveTier = maxEffectiveTier(effectiveTier, normalizeHubTier(hubEnt.tier));
+  }
+
+  // Once-off Hub packs fund the wallet rather than creating subscription rows.
+  // While credits remain, preserve the pack's capability band without treating
+  // the purchase as a recurring/lifetime subscription.
+  if (hubEnt?.source === "hub" && hasPaidCredits) {
+    effectiveTier = maxEffectiveTier(effectiveTier, effectiveTierFromPack(hubEnt.packTier));
   }
 
 
@@ -110,10 +153,13 @@ export function useUserTier() {
     effectiveTier,
     userId: effectiveUserId,
     isLoggedIn: OPEN_NOVA_LOCAL_ONLY || !!userId,
-    canGenerateImages: tier !== "free",
-    // Premium narration is gated by add-on credits (checked server-side).
+    creditsRemaining,
+    hasPaidCredits,
+    canGenerateImages: tier !== "free" || hasPaidCredits,
+    // Premium narration is credit-gated server-side; a funded pack may use it
+    // even when no legacy subscription tier exists.
     canUseNarration: true,
-    canPublish: tier === "premium",
+    canPublish: tier === "premium" || hasPaidCredits,
     hasSupport: tier === "premium",
     /** Retired: subscriptions no longer exist. Kept as `null` for compat. */
     subscription: null as null,

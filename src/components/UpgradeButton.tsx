@@ -1,7 +1,7 @@
 import { ArrowUpRight } from "lucide-react";
 import { Button, type ButtonProps } from "@/components/ui/button";
-import { hubCheckoutUrl, type LifetimeTier } from "@/lib/hub";
-import { logSubscriptionCheckout, verifyCheckoutPriceOrToast } from "@/lib/payfast-checkout-log";
+import { HUB_PRICING_URL, type LifetimeTier } from "@/lib/hub";
+import { trackEvent } from "@/lib/analytics";
 
 type Plan = LifetimeTier | "bundle";
 
@@ -29,17 +29,10 @@ export function UpgradeButton({
   return (
     <Button asChild variant={variant} size={size} className={className} {...rest}>
       <a
-        href={hubCheckoutUrl(plan)}
+        href={`${HUB_PRICING_URL}#epublisher`}
         target="_blank"
         rel="noopener noreferrer"
-        onClick={(e) => {
-          if (plan === "bundle") return;
-          if (!verifyCheckoutPriceOrToast(plan, "once", source)) {
-            e.preventDefault();
-            return;
-          }
-          logSubscriptionCheckout(plan, "once", source);
-        }}
+        onClick={() => trackEvent("upgrade_hub_pricing_click", { plan, source })}
         className="inline-flex items-center gap-1.5"
       >
         {label}

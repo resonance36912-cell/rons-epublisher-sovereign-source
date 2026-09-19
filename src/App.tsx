@@ -8,7 +8,6 @@ import { I18nProvider } from "@/lib/i18n";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { PremiumOverQuotaDialog } from "@/components/PremiumOverQuotaDialog";
 import { Loader2 } from "lucide-react";
-import { HubPricingMismatchBanner } from "@/components/HubPricingMismatchBanner";
 import { SignInDebugPanel } from "@/components/SignInDebugPanel";
 import { AuthSessionSync } from "@/components/AuthSessionSync";
 import { OPEN_NOVA_LOCAL_ONLY } from "@/lib/sovereign-mode";
@@ -87,7 +86,6 @@ const App = () => (
         <TooltipProvider>
           <Toaster />
           <Sonner />
-          {!OPEN_NOVA_LOCAL_ONLY && <HubPricingMismatchBanner />}
           {!OPEN_NOVA_LOCAL_ONLY && <PremiumOverQuotaDialog />}
           {!OPEN_NOVA_LOCAL_ONLY && <SignInDebugPanel />}
           <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/$/, "") || undefined}>
