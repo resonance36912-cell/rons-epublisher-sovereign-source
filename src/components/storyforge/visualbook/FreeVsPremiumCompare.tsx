@@ -1,4 +1,5 @@
 import { Sparkles, Zap, Check, X } from "lucide-react";
+import { FREE_PROMOTION_ACTIVE, FREE_PROMOTION } from "@/lib/promotion";
 
 // Pricing constants (USD). Keep in sync with API Usage Tracking memory.
 const TTS_USD_PER_CHAR = 0.0003;
@@ -20,8 +21,8 @@ interface Props {
 export function FreeVsPremiumCompare({ surface, units = 0 }: Props) {
   const isTts = surface === "tts";
 
-  const freeLabel = isTts ? "Eco narration" : "Draft images";
-  const premiumLabel = isTts ? "ElevenLabs premium" : "Gemini premium";
+  const freeLabel = isTts ? "Local / open narration" : "Local / open images";
+  const premiumLabel = isTts ? (FREE_PROMOTION_ACTIVE ? "Enhanced AI narration" : "ElevenLabs premium") : (FREE_PROMOTION_ACTIVE ? "Enhanced AI images" : "Gemini premium");
 
   const freeFeatures = isTts
     ? [
@@ -56,27 +57,29 @@ export function FreeVsPremiumCompare({ surface, units = 0 }: Props) {
     ? `$${TTS_USD_PER_CHAR.toFixed(4)} / character`
     : `$${IMAGE_USD_PER_IMG.toFixed(2)} / image`;
   const totalUsd = units > 0 ? units * perUnit : 0;
-  const totalLabel = units > 0
-    ? `Premium cost for this batch: ~$${totalUsd.toFixed(2)} (${units.toLocaleString()} ${isTts ? "chars" : "images"})`
-    : `Premium is billed at ${perUnitLabel}.`;
+  const totalLabel = FREE_PROMOTION_ACTIVE
+    ? `Both provider paths are included during the ${FREE_PROMOTION.shortLabel.toLowerCase()}. Usage is metered internally for costing only; no payment is required.`
+    : units > 0
+      ? `Premium cost for this batch: ~$${totalUsd.toFixed(2)} (${units.toLocaleString()} ${isTts ? "chars" : "images"})`
+      : `Premium is billed at ${perUnitLabel}.`;
 
   return (
     <div className="mt-2 rounded-md border border-border/40 bg-background/40 p-2.5 space-y-2">
       <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">
-        Compare free vs premium
+        {FREE_PROMOTION_ACTIVE ? "Compare provider quality" : "Compare free vs premium"}
       </p>
       <div className="grid grid-cols-2 gap-2">
         <Column
           title={freeLabel}
           icon={<Zap className="h-3 w-3" />}
-          badge="Free"
+          badge={FREE_PROMOTION_ACTIVE ? "Included" : "Free"}
           badgeClass="bg-muted text-muted-foreground"
           features={freeFeatures}
         />
         <Column
           title={premiumLabel}
           icon={<Sparkles className="h-3 w-3 text-primary" />}
-          badge={perUnitLabel}
+          badge={FREE_PROMOTION_ACTIVE ? "Included" : perUnitLabel}
           badgeClass="bg-primary/15 text-primary"
           features={premiumFeatures}
         />

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Leaf, X, Settings2 } from "lucide-react";
 import { setTtsMode, setImageMode } from "@/lib/cost-mode";
+import { FREE_PROMOTION_ACTIVE } from "@/lib/promotion";
 
 /**
  * Floats a small dismissible banner inside the VisualBook screen whenever the
@@ -77,11 +78,14 @@ export function AutoEcoBanner() {
             </div>
             <div className="flex-1 min-w-0 space-y-1">
               <p className="text-sm font-semibold text-foreground">
-                Eco mode auto-engaged
+                {FREE_PROMOTION_ACTIVE ? "Fallback provider active" : "Eco mode auto-engaged"}
               </p>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                {what} are temporarily using free providers because this month's premium budget is ≥80% spent.
-                Quality returns to premium once the budget resets — or override below.
+                {FREE_PROMOTION_ACTIVE ? (
+                  <>{what} switched to an alternate governed provider because the preferred provider reached an internal budget threshold. Access remains free during the promotion.</>
+                ) : (
+                  <>{what} are temporarily using free providers because this month's premium budget is ≥80% spent. Quality returns to premium once the budget resets — or override below.</>
+                )}
               </p>
               <div className="flex flex-wrap items-center gap-2 pt-1.5">
                 <button
@@ -89,11 +93,13 @@ export function AutoEcoBanner() {
                   className="inline-flex items-center gap-1.5 rounded-md border border-primary/40 bg-primary/10 px-2.5 py-1 text-[11px] font-medium text-primary hover:bg-primary/15 transition-colors"
                 >
                   <Settings2 className="w-3 h-3" />
-                  Force premium for me
+                  {FREE_PROMOTION_ACTIVE ? "Retry enhanced provider" : "Force premium for me"}
                 </button>
-                <span className="text-[10px] text-muted-foreground/70">
-                  (counts against your add-on credits)
-                </span>
+                {!FREE_PROMOTION_ACTIVE && (
+                  <span className="text-[10px] text-muted-foreground/70">
+                    (counts against your add-on credits)
+                  </span>
+                )}
               </div>
             </div>
             <button

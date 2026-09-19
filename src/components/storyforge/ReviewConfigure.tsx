@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useUserTier } from "@/hooks/useUserTier";
 import { getPreferredPlaybackProvider, isNarrationAbortError, requestNarrationAudio, setPreferredPlaybackProvider, speakWithBrowserNarration, stopBrowserNarration } from "@/lib/tts-client";
 import { DEFAULT_BROWSER_VOICE, normalizeNarrationForTier } from "@/lib/narration-config";
+import { FREE_PROMOTION_ACTIVE, FREE_PROMOTION } from "@/lib/promotion";
 
 const DEPTHS = [
   { value: "summary", label: "Summary", desc: "A concise overview of the key points" },
@@ -437,14 +438,14 @@ export function ReviewConfigure() {
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2 min-w-0">
                 <Mic2 className="w-4 h-4 text-muted-foreground shrink-0" />
-                <span className="text-sm font-semibold">Free plan</span>
+                <span className="text-sm font-semibold">{FREE_PROMOTION_ACTIVE && !isFreeTier ? "Local / browser narration" : "Free plan"}</span>
               </div>
               {isFreeTier && (
                 <span className="text-[10px] uppercase tracking-wide font-semibold text-primary">Active</span>
               )}
             </div>
             <p className="text-xs text-muted-foreground mt-1.5 leading-snug">
-              Uses your <strong className="text-foreground">browser voice</strong> — built into your device, no credits, no AI voice selector.
+              Uses your <strong className="text-foreground">browser voice</strong> — built into your device and available without payment.
             </p>
           </div>
           <div
@@ -457,14 +458,14 @@ export function ReviewConfigure() {
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2 min-w-0">
                 <Sparkles className="w-4 h-4 text-primary shrink-0" />
-                <span className="text-sm font-semibold">Premium plan</span>
+                <span className="text-sm font-semibold">{FREE_PROMOTION_ACTIVE ? "Enhanced AI narration" : "Premium plan"}</span>
               </div>
               {!isFreeTier && (
                 <span className="text-[10px] uppercase tracking-wide font-semibold text-primary">Active</span>
               )}
             </div>
             <p className="text-xs text-muted-foreground mt-1.5 leading-snug">
-              Unlocks <strong className="text-foreground">ElevenLabs AI voices</strong> (George, Sarah, Daniel…) with realistic narration.
+              <strong className="text-foreground">ElevenLabs AI voices</strong> (George, Sarah, Daniel…) are included during {FREE_PROMOTION_ACTIVE ? FREE_PROMOTION.shortLabel.toLowerCase() : "eligible access"}.
             </p>
           </div>
         </div>
@@ -478,13 +479,17 @@ export function ReviewConfigure() {
               <Sparkles className="w-4 h-4 text-primary shrink-0" />
             )}
             <div className="min-w-0">
-              <span className="text-sm font-semibold block">Premium Narration</span>
+              <span className="text-sm font-semibold block">{FREE_PROMOTION_ACTIVE ? "Enhanced AI Narration" : "Premium Narration"}</span>
               <span className="text-xs text-muted-foreground block">
                 {isFreeTier
                   ? "Locked on the Free plan — upgrade to unlock ElevenLabs AI voices like George."
                   : config.narrationProvider === "elevenlabs"
-                    ? "Using ElevenLabs AI voices (uses credits)"
-                    : "Using free browser speech synthesis — no credits required"}
+                    ? FREE_PROMOTION_ACTIVE
+                      ? "Using ElevenLabs AI voices — included during the free-access promotion."
+                      : "Using ElevenLabs AI voices (uses credits)"
+                    : FREE_PROMOTION_ACTIVE
+                      ? "Using browser speech synthesis — included during the free-access promotion."
+                      : "Using free browser speech synthesis — no credits required"}
               </span>
             </div>
           </div>

@@ -3,6 +3,7 @@ import { AlertTriangle, Cloud, ShieldCheck } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { OPEN_NOVA_LOCAL_ONLY } from "@/lib/sovereign-mode";
+import { FREE_PROMOTION_ACTIVE } from "@/lib/promotion";
 import {
   fetchFreeCloudStatus,
   getFreeCloudQualityEnabled,
@@ -91,7 +92,7 @@ export function ProviderHealthBanner() {
         <div className="container px-4 sm:px-6 py-1.5 text-xs flex flex-wrap items-center gap-x-4 gap-y-1">
           <span className="inline-flex items-center gap-1.5">
             <ShieldCheck className="w-3.5 h-3.5" />
-            Sovereign local — billing/cloud auth remain bypassed; public research and local models run through governed services.
+            {FREE_PROMOTION_ACTIVE ? "Free access promotion — no payment is required; public research and local models run through governed services." : "Sovereign local — billing/cloud auth remain bypassed; public research and local models run through governed services."}
           </span>
           <label className="inline-flex items-center gap-1.5 cursor-pointer">
             <Cloud className="w-3.5 h-3.5" />
@@ -118,7 +119,7 @@ export function ProviderHealthBanner() {
     <div className="w-full bg-amber-500/10 border-b border-amber-500/30 text-amber-700 dark:text-amber-300">
       <div className="container px-4 sm:px-6 py-1.5 flex items-center gap-2 text-xs">
         <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-        <span>{label} — Premium users are unaffected. Standard/Eco output may be slow or fail temporarily.</span>
+        <span>{label} — {FREE_PROMOTION_ACTIVE ? "enhanced-provider fallback remains included; local/open output may be slow or fail temporarily." : "Premium users are unaffected. Standard/Eco output may be slow or fail temporarily."}</span>
       </div>
     </div>
   );
