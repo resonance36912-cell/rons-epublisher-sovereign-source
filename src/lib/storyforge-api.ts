@@ -25,7 +25,7 @@ const OPEN_NOVA_RESEARCH_BASE_URL = String(
   import.meta.env.VITE_OPEN_NOVA_RESEARCH_URL || "/open-nova-research",
  ).replace(/\/$/, "");
 const OPEN_NOVA_IMAGE_URL = String(
-  import.meta.env.VITE_RONS_IMAGE_URL || "http://127.0.0.1:7865",
+  import.meta.env.VITE_RONS_IMAGE_URL || "/open-nova-image",
 ).replace(/\/$/, "");
 
 async function localImageRequest(body: Record<string, unknown>) {
@@ -594,9 +594,10 @@ export async function generateStoryboard(
       ...chapter,
       references: usable.map((source) => source.url ? `${source.title} (${source.url})` : source.title),
     }));
-    if (getFreeCloudQualityEnabled() && chapters.length > 0 && usable.length > 0) {
+    const premiumStoryboard = (config.visualQuality || "premium") !== "fast";
+    if ((premiumStoryboard || getFreeCloudQualityEnabled()) && chapters.length > 0 && usable.length > 0) {
       try {
-        onProgress?.({ message: "Refining prose through the governed free-cloud router…", percent: 82, requestId });
+        onProgress?.({ message: "Directing premium storyboard structure and visual prompts…", percent: 82, requestId });
         const sourceExcerpts = usable.map((source) => ({
           title: source.title,
           url: source.url,
@@ -612,9 +613,9 @@ export async function generateStoryboard(
         });
         const refined = await requestHybridText({
           prompt,
-          allowCloud: true,
-          timeoutMs: 90_000,
-          system: "You are the Resonance ePublisher editorial refinement engine. Use ONLY the supplied source excerpts and baseline chapters. Preserve the exact story-page count and factual meaning. Never invent facts, dates, names, quotations, dialogue or events. Improve structure, clarity, narrative flow and visual prompts for the requested theme and tone. Return JSON only as {\"chapters\":[{\"title\":string,\"body\":string,\"imagePrompt\":string}]}. No markdown fences.",
+          allowCloud: getFreeCloudQualityEnabled(),
+          timeoutMs: config.visualQuality === "storyboard_pro" ? 150_000 : 120_000,
+          system: `You are the Resonance ePublisher premium storyboard director. Use ONLY the supplied source excerpts and baseline chapters. Preserve the exact story-page count and factual meaning. Never invent facts, dates, names, quotations, dialogue or events. Quality profile: ${config.visualQuality || "premium"}. Improve narrative structure, pacing, clarity and visual direction. Every imagePrompt must read like a professional production brief: concrete subject and action, environment, composition, camera/lens language, lighting, colour palette, material/texture detail, mood, and continuity anchors; avoid generic filler, text overlays, watermarks, invented events, and contradictory anatomy. For storyboard_pro, emphasize recurring character identity, wardrobe/environment continuity, deliberate shot variety and editorial sequencing. Return JSON only as {"chapters":[{"title":string,"body":string,"imagePrompt":string}]}. No markdown fences.`,
         });
         const parsed = parseHybridJson<{ chapters?: Array<{ title?: string; body?: string; imagePrompt?: string }> }>(refined.text);
         const candidate = parsed?.chapters;
@@ -815,13 +816,27 @@ export async function generateChapterImage(
   rawPromptMode?: boolean,
   modeOverride?: "auto" | "draft" | "premium",
   orientation: "landscape" | "portrait" | "square" = "landscape",
+  qualityProfile: "fast" | "premium" | "storyboard_pro" = "premium",
 ): Promise<{ chapterId: string; imageUrl: string; provider?: string; freeTier?: boolean; upgradeable?: boolean; mode?: string; correlationId?: string }> {
   assertMaxLength("imagePrompt", imagePrompt, AI_INPUT_LIMITS.imagePrompt);
   if (OPEN_NOVA_LOCAL_ONLY) {
     const correlationId = `local-image-${Date.now()}`;
-    const prompt = [imagePrompt, characterDescription, additionalInstruction, imageStyle === "animated" ? "animated illustration" : "cinematic illustration"].filter(Boolean).join(", ");
-    const data = await localImageRequest({ prompt, orientation, referenceImage: referenceImageBase64, refCharacterDetails, rawPromptMode });
-    return { chapterId, imageUrl: data.imageUrl, provider: data.provider || "rons-local-image", freeTier: true, upgradeable: false, mode: "local-gpu", correlationId };
+    const qualityDirection = qualityProfile === "storyboard_pro"
+      ? "premium cinematic storyboard still, strong visual hierarchy, deliberate shot design, identity and wardrobe continuity, physically coherent anatomy, realistic materials, controlled depth of field, editorial colour grade"
+      : qualityProfile === "premium"
+        ? "premium editorial image, sophisticated composition, realistic lighting and materials, natural anatomy, fine texture detail, cinematic colour grade, publication-ready finish"
+        : "clean production preview, clear subject, coherent composition";
+    const prompt = [
+      imagePrompt,
+      characterDescription && `Recurring character continuity: ${characterDescription}`,
+      additionalInstruction,
+      imageStyle === "animated" ? "high-end animated editorial illustration" : "cinematic photographic illustration",
+      qualityDirection,
+      "no visible watermark, no UI chrome, no accidental captions or gibberish text",
+    ].filter(Boolean).join(", ");
+    const negativePrompt = "low resolution, blurry, jpeg artifacts, distorted anatomy, deformed hands, extra fingers, duplicate limbs, asymmetrical eyes, plastic skin, flat lighting, random text, watermark, logo, UI overlay";
+    const data = await localImageRequest({ prompt, negativePrompt, orientation, qualityProfile, referenceImage: referenceImageBase64, refCharacterDetails, rawPromptMode });
+    return { chapterId, imageUrl: data.imageUrl, provider: data.provider || "rons-local-image", freeTier: true, upgradeable: false, mode: qualityProfile, correlationId };
   }
   assertMaxLength("characterDescription", characterDescription, AI_INPUT_LIMITS.imageCharacter);
   assertMaxLength("additionalInstruction", additionalInstruction, AI_INPUT_LIMITS.imageInstruction);
@@ -851,7 +866,7 @@ export async function generateChapterImage(
       : `img-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`);
 
   const { data, error } = await supabase.functions.invoke("generate-chapter-image", {
-    body: { chapterId, imagePrompt, referenceImage: referenceImageBase64, imageStyle, characterDescription, additionalInstruction, refCharacterDetails, rawPromptMode, mode, orientation, correlationId, requestId: correlationId },
+    body: { chapterId, imagePrompt, referenceImage: referenceImageBase64, imageStyle, characterDescription, additionalInstruction, refCharacterDetails, rawPromptMode, mode, orientation, qualityProfile, correlationId, requestId: correlationId },
     headers: { [REQUEST_ID_HEADER]: correlationId },
   });
 
