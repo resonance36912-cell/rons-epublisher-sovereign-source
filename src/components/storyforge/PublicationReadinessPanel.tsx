@@ -132,6 +132,10 @@ export function PublicationReadinessPanel({
     for (const item of issues) map.get(item.category)?.push(item);
     return map;
   }, [issues]);
+  const safeFixIssues = useMemo(
+    () => issues.filter((item) => !!item.autofix && !!item.chapterId),
+    [issues],
+  );
 
   const dismissIssue = (item: PublicationReadinessIssue) => {
     const reason = window.prompt(
@@ -150,6 +154,23 @@ export function PublicationReadinessPanel({
     setChapters((prev) => prev.map((ch) =>
       ch.id === item.chapterId ? applyReadinessAutofix(ch, item.autofix!) : ch
     ));
+  };
+
+  const applyAllSafeFixes = () => {
+    if (safeFixIssues.length === 0) return;
+    setChapters((previous) => previous.map((chapter) => {
+      let next = chapter;
+      for (const issue of safeFixIssues) {
+        if (issue.chapterId === chapter.id && issue.autofix) {
+          next = applyReadinessAutofix(next, issue.autofix);
+        }
+      }
+      return next;
+    }));
+    toast({
+      title: "Safe readiness fixes applied",
+      description: `Applied ${safeFixIssues.length} deterministic cleanup${safeFixIssues.length === 1 ? "" : "s"}. Factual, attribution, identity, source-conflict and missing-media findings remain for review.`,
+    });
   };
 
   const approveRevision = () => {
@@ -206,6 +227,24 @@ export function PublicationReadinessPanel({
           {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
         </button>
       </div>
+
+      {safeFixIssues.length > 0 && (
+        <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 flex flex-wrap items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-xs font-semibold flex items-center gap-1.5">
+              <Wrench className="w-3.5 h-3.5 text-primary" />
+              Deterministic cleanup available
+            </p>
+            <p className="text-[10px] text-muted-foreground mt-1">
+              {safeFixIssues.length} finding{safeFixIssues.length === 1 ? "" : "s"} can be corrected without inventing facts: transcript formatting, dense paragraph breaks, or search-query placeholders in references.
+            </p>
+          </div>
+          <Button type="button" size="sm" variant="outline" onClick={applyAllSafeFixes} className="gap-1.5">
+            <Wrench className="w-3.5 h-3.5" />
+            Apply all safe fixes ({safeFixIssues.length})
+          </Button>
+        </div>
+      )}
 
       {uncitableSourceCount > 0 && (
         <div className="rounded-lg border border-amber-500/35 bg-amber-500/5 p-3 flex flex-wrap items-center justify-between gap-3">
