@@ -1243,67 +1243,26 @@ export default function Landing() {
           ))}
         </div>
       </section>
-
-      {/* Pricing – Hub-authoritative ePublisher packs (preview, checkout on reson8.life) */}
+      {/* Free Access Promotion */}
       <motion.section
         className="container px-6 pb-20"
-        onViewportEnter={() => trackEvent("pricing_view")}
+        onViewportEnter={() => trackEvent("promotion_view")}
         viewport={{ once: true, amount: 0.2 }}
       >
-        <h2 className="text-2xl md:text-3xl font-display font-bold text-center mb-3">
-          South-African pricing, global publishing
-        </h2>
-        <p className="text-muted-foreground text-center text-sm mb-10 max-w-xl mx-auto">
-          Start free, then buy a once-off ePublisher pack when you need more projects or production credits. No recurring app fees.
-        </p>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 max-w-5xl mx-auto">
-          {[
-            { id: "free", name: "Free", price: "R0", per: "forever", bundle: "Start creating", tone: "default" },
-            { id: "epublisher_starter_pack", name: "Starter Pack", price: "R99", per: "once-off", bundle: "+ 99 credits", tone: "default" },
-            { id: "epublisher_creator_pack", name: "Creator Pack", price: "R299", per: "once-off", bundle: "+ 299 credits", tone: "popular" },
-            { id: "epublisher_studio_pack", name: "Studio Pack", price: "R699", per: "once-off", bundle: "+ 699 credits", tone: "default" },
-          ].map((tier, idx) => (
-            <motion.div
-              key={tier.id}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: idx * 0.05, duration: 0.4 }}
-              className={`glass-card p-4 flex flex-col gap-2 relative ${
-                tier.tone === "popular" ? "border-primary/60 shadow-md shadow-primary/10" : ""
-              }`}
-            >
-              {tier.tone === "popular" && (
-                <span className="absolute -top-2 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-primary text-primary-foreground text-[10px] font-semibold flex items-center gap-1">
-                  <Star className="w-2.5 h-2.5" /> Popular
-                </span>
-              )}
-              <h3 className="font-display font-bold text-base">{tier.name}</h3>
-              <div>
-                <span className="text-2xl font-bold">{tier.price}</span>
-                <span className="text-[11px] text-muted-foreground ml-1">{tier.per}</span>
-              </div>
-              <div className="text-[11px] text-primary font-medium">
-                {tier.bundle}
-              </div>
-              <Button
-                variant={tier.tone === "popular" ? "default" : "outline"}
-                size="sm"
-                asChild
-                className={`w-full mt-auto h-8 text-xs ${tier.tone === "popular" ? "glow-primary" : ""}`}
-              >
-                <Link to="/pricing" onClick={() => trackEvent("pricing_landing_tier_click", { tier: tier.id })}>
-                  {tier.id === "free" ? "Start Free" : "View pack"}
-                </Link>
-              </Button>
-            </motion.div>
-          ))}
-        </div>
-
-        <div className="text-center mt-6">
-          <Button variant="link" asChild className="text-primary">
-            <Link to="/pricing" onClick={() => trackEvent("pricing_see_all_click")}>
-              See current ePublisher packs &amp; credit details →
+        <div className="max-w-3xl mx-auto glass-card p-8 md:p-10 text-center border-primary/25">
+          <p className="text-xs font-mono uppercase tracking-[0.22em] text-primary mb-3">
+            Free Access Promotion
+          </p>
+          <h2 className="text-2xl md:text-4xl font-display font-bold">
+            Full ePublisher access is free while we establish real operating costs
+          </h2>
+          <p className="text-muted-foreground text-sm md:text-base mt-4 max-w-2xl mx-auto">
+            No payment, pack, top-up, checkout, or subscription is required. Generation, narration,
+            publishing, and export usage are measured so future pricing can be based on validated cost.
+          </p>
+          <Button asChild className="mt-6 rounded-full glow-primary">
+            <Link to="/app" onClick={() => trackEvent("promotion_open_app_click", { source: "landing" })}>
+              Open ePublisher free
             </Link>
           </Button>
         </div>

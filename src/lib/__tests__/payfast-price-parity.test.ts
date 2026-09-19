@@ -1,27 +1,30 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { EPUBLISHER_PACKS, hubCheckoutUrl, hubPackCheckoutUrl, hubTopupUrl } from "@/lib/hub";
-import { TIERS } from "@/pages/Pricing";
+import { FREE_PROMOTION_ACTIVE } from "@/lib/promotion";
 
 describe("free-promotion billing suppression", () => {
+  it("keeps the promotion active", () => {
+    expect(FREE_PROMOTION_ACTIVE).toBe(true);
+  });
+
   for (const pack of EPUBLISHER_PACKS) {
-    it(`does not build a checkout URL for ${pack.id} during the promotion`, () => {
+    it("does not build a checkout URL for " + pack.id, () => {
       expect(hubPackCheckoutUrl(pack.id)).toBe("/app");
     });
   }
 
-  it("keeps legacy lifetime SKUs off the public pricing catalog", () => {
-    const publicIds = TIERS.map((tier) => tier.id);
-    expect(publicIds.some((id) => id.startsWith("lifetime_"))).toBe(false);
-    expect(publicIds).toEqual([
-      "free",
-      "epublisher_starter_pack",
-      "epublisher_creator_pack",
-      "epublisher_studio_pack",
-    ]);
-  });
-
-  it("routes all legacy upgrade/top-up helpers back into the free app", () => {
+  it("routes legacy upgrade and top-up helpers back into the free app", () => {
     expect(hubCheckoutUrl("creator")).toBe("/app");
     expect(hubTopupUrl()).toBe("/app");
+  });
+
+  it("keeps historical price ladders out of the public pricing page", () => {
+    const source = readFileSync(resolve(process.cwd(), "src/pages/Pricing.tsx"), "utf8");
+    expect(source).not.toMatch(/R(?:99|299|699)\b/);
+    expect(source).not.toContain("hubPackCheckoutUrl");
+    expect(source).not.toContain("Buy Creator");
+    expect(source).toContain("Open ePublisher free");
   });
 });
