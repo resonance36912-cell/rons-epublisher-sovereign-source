@@ -35,7 +35,13 @@ export function ResearchVerify() {
   const { config, setConfig, sources, setSources, setStep } = useStoryForge();
   const { toast } = useToast();
   const { t } = useI18n();
-  const [phase, setPhase] = useState<VerifyPhase>("discovering");
+  const suppliedOnly = (config.sourcePolicy || "supplied_only") === "supplied_only";
+  const suppliedUrls = sources.filter((source) => source.type === "url");
+  const readySuppliedSources = sources.filter((source) => source.type !== "search" && source.status === "ready" && !!source.content?.trim());
+  const initialPhase: VerifyPhase = suppliedOnly
+    ? (suppliedUrls.length === 0 && readySuppliedSources.length > 0 ? "done" : "review")
+    : "discovering";
+  const [phase, setPhase] = useState<VerifyPhase>(initialPhase);
   const [discovered, setDiscovered] = useState<DiscoveredSource[]>([]);
   const [progress, setProgress] = useState(0);
   const [statusMsg, setStatusMsg] = useState("");
@@ -44,9 +50,21 @@ export function ResearchVerify() {
   const [userExcludedUrls, setUserExcludedUrls] = useState<Set<string>>(() => new Set());
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Auto-discover on mount
+  // Enforce the source policy before any network discovery is attempted.
   useEffect(() => {
-    if (phase === "discovering") {
+    if (suppliedOnly) {
+      setDiscovered([]);
+      setError("");
+      if (suppliedUrls.length === 0 && readySuppliedSources.length > 0) {
+        setProgress(100);
+        setStatusMsg(`${readySuppliedSources.length} supplied evidence source(s) ready; public discovery was not run.`);
+        setPhase("done");
+      } else {
+        setProgress(0);
+        setStatusMsg("Supplied sources only — public discovery disabled by policy.");
+        setPhase("review");
+      }
+    } else if (phase === "discovering") {
       runDiscovery();
     }
     return () => {
@@ -55,6 +73,20 @@ export function ResearchVerify() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const runDiscovery = async () => {
+    if (suppliedOnly) {
+      setDiscovered([]);
+      setError("");
+      if (suppliedUrls.length === 0 && readySuppliedSources.length > 0) {
+        setProgress(100);
+        setStatusMsg(`${readySuppliedSources.length} supplied evidence source(s) ready; public discovery was not run.`);
+        setPhase("done");
+      } else {
+        setProgress(0);
+        setStatusMsg("Supplied sources only — public discovery disabled by policy.");
+        setPhase("review");
+      }
+      return;
+    }
     setPhase("discovering");
     setProgress(10);
     setStatusMsg("Opening the governed Open Nova research gateway…");
@@ -156,7 +188,7 @@ export function ResearchVerify() {
       // Collect user-provided URLs from sources
       const requestedUrls = [
         ...sources.filter((s) => s.type === "url").map((s) => s.url || s.title),
-        ...discovered.filter((source) => source.selected).map((source) => source.url),
+        ...(!suppliedOnly ? discovered.filter((source) => source.selected).map((source) => source.url) : []),
       ].map(canonicalizeResearchUrl).filter(Boolean);
       const userUrls = Array.from(new Set(requestedUrls));
       if (userUrls.length === 0) {
@@ -290,14 +322,18 @@ export function ResearchVerify() {
       <div className="text-center space-y-2">
         <h2 className="text-2xl font-serif font-semibold">{t("research.title")}</h2>
         <p className="text-muted-foreground">
-          {phase === "discovering" ? `Discovering sources for “${config.topic}”` : `Discovery complete — review sources for “${config.topic}”`}
+          {suppliedOnly
+            ? `Supplied-source verification for “${config.topic}”`
+            : phase === "discovering"
+              ? `Discovering sources for “${config.topic}”`
+              : `Discovery complete — review sources for “${config.topic}”`}
         </p>
         <p className="inline-flex items-center gap-1.5 rounded-full border border-green-500/30 bg-green-500/5 px-3 py-1 text-[11px] text-green-400">
-          <ShieldCheck className="h-3.5 w-3.5" /> Locally hosted · Public-web research enabled
+          <ShieldCheck className="h-3.5 w-3.5" /> {suppliedOnly ? "Locally hosted · Supplied sources only · Public discovery disabled" : "Locally hosted · Supplementary public research enabled"}
         </p>
       </div>
       <div className="grid grid-cols-3 gap-3">
-        <VerifyStep step={1} label="Discover" desc="Find public candidates" status={phase === "discovering" ? "active" : "done"} />
+        <VerifyStep step={1} label={suppliedOnly ? "Source policy" : "Discover"} desc={suppliedOnly ? "Use supplied evidence only" : "Find public candidates"} status={phase === "discovering" ? "active" : "done"} />
         <VerifyStep step={2} label="Review sources" desc="Select relevant evidence" status={phase === "review" ? "active" : phase === "transcribing" || phase === "done" ? "done" : "pending"} />
         <VerifyStep step={3} label="Extract content" desc="Text or public captions" status={phase === "transcribing" ? "active" : phase === "done" ? "done" : "pending"} />
       </div>
@@ -328,16 +364,26 @@ export function ResearchVerify() {
           )}
 
           <div className="glass-card px-4 py-3 flex flex-wrap items-center justify-between gap-3">
-            <div className="text-sm font-medium">{quality.discovered} discovered · {totalRequested} selected · Limit {RESEARCH_SOURCE_LIMIT}</div>
-            <div className="text-xs text-muted-foreground">{quality.recommended} recommended · {quality.needsReview} needs review · {quality.excluded} excluded</div>
+            <div className="text-sm font-medium">
+              {suppliedOnly
+                ? `${manualUrlCount} supplied URL${manualUrlCount === 1 ? "" : "s"} · ${readySuppliedSources.length} supplied source${readySuppliedSources.length === 1 ? "" : "s"} already ready`
+                : `${quality.discovered} discovered · ${totalRequested} selected · Limit ${RESEARCH_SOURCE_LIMIT}`}
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {suppliedOnly
+                ? "Public discovery is disabled by the selected source policy."
+                : `${quality.recommended} recommended · ${quality.needsReview} needs review · ${quality.excluded} excluded`}
+            </div>
           </div>
-          <div className="flex flex-wrap gap-2 justify-end">
-            <Button variant="outline" size="sm" onClick={selectRecommended}>Select recommended</Button>
-            <Button variant="outline" size="sm" onClick={deselectAll}>Clear selection</Button>
-            <Button variant="outline" size="sm" onClick={runDiscovery} className="gap-1.5">
-              <Search className="w-3.5 h-3.5" /> Re-search
-            </Button>
-          </div>
+          {!suppliedOnly && (
+            <div className="flex flex-wrap gap-2 justify-end">
+              <Button variant="outline" size="sm" onClick={selectRecommended}>Select recommended</Button>
+              <Button variant="outline" size="sm" onClick={deselectAll}>Clear selection</Button>
+              <Button variant="outline" size="sm" onClick={runDiscovery} className="gap-1.5">
+                <Search className="w-3.5 h-3.5" /> Re-search
+              </Button>
+            </div>
+          )}
 
           {reviewGroups.map((group) => {
             const items = discovered.filter((item) => item.reviewGroup === group.key);
@@ -464,9 +510,11 @@ export function ResearchVerify() {
                 <Button variant="outline" size="sm" onClick={() => setStep(0)} className="gap-1.5">
                   <FileText className="w-3.5 h-3.5" /> Add URL or file
                 </Button>
-                <Button variant="outline" size="sm" onClick={runDiscovery} className="gap-1.5">
-                  <Search className="w-3.5 h-3.5" /> Re-search
-                </Button>
+                {!suppliedOnly && (
+                  <Button variant="outline" size="sm" onClick={runDiscovery} className="gap-1.5">
+                    <Search className="w-3.5 h-3.5" /> Re-search
+                  </Button>
+                )}
               </div>
               <label htmlFor="topic-only-confirmation" className="flex items-start gap-3 rounded-lg border border-border/60 bg-background/50 p-3 cursor-pointer">
                 <Checkbox
