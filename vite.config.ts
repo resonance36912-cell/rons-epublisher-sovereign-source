@@ -115,6 +115,18 @@ export default defineConfig(({ mode }) => ({
         headers: { Origin: "http://localhost:3101" },
         rewrite: (requestPath) => requestPath.replace(/^\/open-nova-stt/, ""),
       },
+      "/open-nova-image": {
+        target: "http://127.0.0.1:7870",
+        changeOrigin: false,
+        headers: { Origin: "http://localhost:3101" },
+        rewrite: (requestPath) => requestPath.replace(/^\/open-nova-image/, ""),
+      },
+      "/open-nova-ai": {
+        target: "http://127.0.0.1:7868",
+        changeOrigin: false,
+        headers: { Origin: "http://localhost:3101" },
+        rewrite: (requestPath) => requestPath.replace(/^\/open-nova-ai/, ""),
+      },
     },
     hmr: {
       overlay: false,
@@ -143,6 +155,18 @@ export default defineConfig(({ mode }) => ({
         // bound to loopback and accepts only governed ePublisher origins.
         headers: { Origin: "http://localhost:3101" },
         rewrite: (requestPath) => requestPath.replace(/^\/open-nova-stt/, ""),
+      },
+      "/open-nova-image": {
+        target: "http://127.0.0.1:7870",
+        changeOrigin: false,
+        headers: { Origin: "http://localhost:3101" },
+        rewrite: (requestPath) => requestPath.replace(/^\/open-nova-image/, ""),
+      },
+      "/open-nova-ai": {
+        target: "http://127.0.0.1:7868",
+        changeOrigin: false,
+        headers: { Origin: "http://localhost:3101" },
+        rewrite: (requestPath) => requestPath.replace(/^\/open-nova-ai/, ""),
       },
     },
   },  optimizeDeps: {

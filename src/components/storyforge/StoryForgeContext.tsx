@@ -192,6 +192,8 @@ export type StoryConfig = {
   orientation: "portrait" | "landscape";
   visualMode: boolean;
   imageStyle: "cinematic" | "animated";
+  /** Creative rendering profile: fast preview, premium production, or continuity-first storyboard mode. */
+  visualQuality?: "fast" | "premium" | "storyboard_pro";
   characterDescription: string;
   narrationVoice: string;
   narrationDemeanour: "calm" | "energetic" | "warm" | "authoritative" | "playful";
@@ -276,6 +278,7 @@ export const DEFAULT_CONFIG: StoryConfig = {
   orientation: "landscape",
   visualMode: false,
   imageStyle: "cinematic",
+  visualQuality: "premium",
   characterDescription: "",
   narrationVoice: "JBFqnCBsd6RMkjVDRZzb",
   narrationDemeanour: "calm",

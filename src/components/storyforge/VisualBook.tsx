@@ -955,7 +955,7 @@ export function VisualBook() {
       try {
         const result = await generateChapterImage(
           chapterId, chapter.imagePrompt, referenceImage || undefined,
-          config.imageStyle, !referenceImage ? config.characterDescription : undefined, instruction, refCharacterDetails, config.rawPromptMode, undefined, config.orientation
+          config.imageStyle, !referenceImage ? config.characterDescription : undefined, instruction, refCharacterDetails, config.rawPromptMode, undefined, config.orientation, config.visualQuality
         );
         setChapters((prev) => prev.map((c) => c.id === chapterId ? { ...c, imageUrl: result.imageUrl, imageLoading: false, imageProvider: result.provider, imageFreeTier: !!result.freeTier, imageCorrelationId: result.correlationId } : c));
         toast({ title: "Image regenerated", description: `Updated visual for ${chapter.title}` });
@@ -1010,7 +1010,7 @@ export function VisualBook() {
       if (stopGenerationRef.current) return;
       setChapters((prev) => prev.map((c) => c.id === ch.id ? { ...c, imageLoading: true } : c));
       try {
-        const result = await generateChapterImage(ch.id, ch.imagePrompt!, referenceImage || undefined, config.imageStyle, !referenceImage ? config.characterDescription : undefined, undefined, refCharacterDetails, config.rawPromptMode, undefined, config.orientation);
+        const result = await generateChapterImage(ch.id, ch.imagePrompt!, referenceImage || undefined, config.imageStyle, !referenceImage ? config.characterDescription : undefined, undefined, refCharacterDetails, config.rawPromptMode, undefined, config.orientation, config.visualQuality);
         setChapters((prev) => prev.map((c) => c.id === ch.id ? { ...c, imageUrl: result.imageUrl, imageLoading: false, imageProvider: result.provider, imageFreeTier: !!result.freeTier, imageCorrelationId: result.correlationId } : c));
       } catch (err: any) {
         setChapters((prev) => prev.map((c) => c.id === ch.id ? { ...c, imageLoading: false } : c));
@@ -1041,7 +1041,7 @@ export function VisualBook() {
       if (stopGenerationRef.current) return;
       setChapters((prev) => prev.map((c) => c.id === ch.id ? { ...c, imageLoading: true } : c));
       try {
-        const result = await generateChapterImage(ch.id, ch.imagePrompt!, referenceImage || undefined, config.imageStyle, !referenceImage ? config.characterDescription : undefined, undefined, refCharacterDetails, config.rawPromptMode, undefined, config.orientation);
+        const result = await generateChapterImage(ch.id, ch.imagePrompt!, referenceImage || undefined, config.imageStyle, !referenceImage ? config.characterDescription : undefined, undefined, refCharacterDetails, config.rawPromptMode, undefined, config.orientation, config.visualQuality);
         setChapters((prev) => prev.map((c) => c.id === ch.id ? { ...c, imageUrl: result.imageUrl, imageLoading: false, imageProvider: result.provider, imageFreeTier: !!result.freeTier, imageCorrelationId: result.correlationId } : c));
       } catch (err: any) {
         setChapters((prev) => prev.map((c) => c.id === ch.id ? { ...c, imageLoading: false } : c));
@@ -1072,7 +1072,7 @@ export function VisualBook() {
     if (!chapter.imagePrompt) return;
     setChapters((prev) => prev.map((c) => c.id === chapter.id ? { ...c, imageLoading: true } : c));
     try {
-      const result = await generateChapterImage(chapter.id, chapter.imagePrompt, referenceImage || undefined, config.imageStyle, !referenceImage ? config.characterDescription : undefined, undefined, refCharacterDetails, config.rawPromptMode, undefined, config.orientation);
+      const result = await generateChapterImage(chapter.id, chapter.imagePrompt, referenceImage || undefined, config.imageStyle, !referenceImage ? config.characterDescription : undefined, undefined, refCharacterDetails, config.rawPromptMode, undefined, config.orientation, config.visualQuality);
       setChapters((prev) => prev.map((c) => c.id === chapter.id ? { ...c, imageUrl: result.imageUrl, imageLoading: false, imageProvider: result.provider, imageFreeTier: !!result.freeTier, imageCorrelationId: result.correlationId } : c));
     } catch (err: any) {
       setChapters((prev) => prev.map((c) => c.id === chapter.id ? { ...c, imageLoading: false } : c));
@@ -1092,7 +1092,7 @@ export function VisualBook() {
         chapter.id, chapter.imagePrompt, referenceImage || undefined,
         config.imageStyle, !referenceImage ? config.characterDescription : undefined,
         undefined, refCharacterDetails, config.rawPromptMode,
-        "premium", config.orientation,
+        "premium", config.orientation, config.visualQuality,
       );
       setChapters((prev) => prev.map((c) => c.id === chapter.id
         ? { ...c, imageUrl: result.imageUrl, imageLoading: false, imageUpgrading: false, imageProvider: result.provider, imageFreeTier: !!result.freeTier, imageCorrelationId: result.correlationId }
@@ -1117,7 +1117,7 @@ export function VisualBook() {
       toast({ title: t("rating.autoOptimizeStarted"), description: t("rating.autoOptimizeDesc") });
       try {
         const optimizedPrompt = `${chapter.imagePrompt}. User feedback: ${comment}. Please improve based on this feedback.`;
-        const result = await generateChapterImage(chapterId, optimizedPrompt, referenceImage || undefined, config.imageStyle, !referenceImage ? config.characterDescription : undefined, comment, refCharacterDetails, config.rawPromptMode, undefined, config.orientation);
+        const result = await generateChapterImage(chapterId, optimizedPrompt, referenceImage || undefined, config.imageStyle, !referenceImage ? config.characterDescription : undefined, comment, refCharacterDetails, config.rawPromptMode, undefined, config.orientation, config.visualQuality);
         setChapters((prev) => prev.map((c) => c.id === chapterId ? { ...c, imageUrl: result.imageUrl, imageLoading: false, autoOptimizing: false, imageProvider: result.provider, imageFreeTier: !!result.freeTier, imageCorrelationId: result.correlationId } : c));
         toast({ title: t("rating.optimizeSuccess"), description: `${chapter.title} — ${t("rating.optimizeSuccessDesc")}` });
       } catch (err: any) {

@@ -120,6 +120,37 @@ export function VisualBookConfig() {
         </button>
       </div>
 
+      {/* Premium creative quality profile */}
+      {!config.useImageAsIs && (
+        <div className="glass-card p-4 sm:p-6 space-y-3">
+          <div>
+            <p className="text-sm font-medium">Creative quality</p>
+            <p className="text-xs text-muted-foreground">Controls storyboard prompt depth, local model routing, render steps and continuity emphasis.</p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            {([
+              ["fast", "Fast", "Preview-quality, lowest latency"],
+              ["premium", "Premium", "High-detail production render"],
+              ["storyboard_pro", "Storyboard Pro", "Continuity-first cinematic planning"],
+            ] as const).map(([value, label, description]) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setConfig((c) => ({ ...c, visualQuality: value }))}
+                className={`rounded-lg border-2 p-3 text-left transition-all ${
+                  (config.visualQuality || "premium") === value
+                    ? "border-primary bg-primary/5 glow-primary"
+                    : "border-border hover:border-primary/40"
+                }`}
+              >
+                <p className="text-sm font-medium">{label}</p>
+                <p className="text-xs text-muted-foreground mt-1">{description}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Reference photo upload */}
       <div
         onDragOver={handleDragOver}

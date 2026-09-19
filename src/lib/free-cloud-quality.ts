@@ -2,7 +2,7 @@ export const FREE_CLOUD_QUALITY_KEY = "resonance_free_cloud_quality";
 export const FREE_CLOUD_QUALITY_EVENT = "free-cloud-quality-changed";
 
 const BROKER_URL = String(
-  import.meta.env.VITE_RONS_AI_BROKER_URL || "http://127.0.0.1:7868",
+  import.meta.env.VITE_RONS_AI_BROKER_URL || "/open-nova-ai",
 ).replace(/\/$/, "");
 
 export type FreeCloudProvider = {
