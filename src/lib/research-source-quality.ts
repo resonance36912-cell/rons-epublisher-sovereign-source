@@ -224,6 +224,31 @@ function discoveryForSource(source: Source, discovered: QualifiedDiscoverySource
   const titleMatches = discovered.filter((item) => normaliseText(item.title || "") === titleKey);
   return titleMatches.length === 1 ? titleMatches[0] : undefined;
 }
+
+export function repairMissingSourceCitations(
+  sources: Source[],
+  discovered: QualifiedDiscoverySource[],
+): { sources: Source[]; repairedCount: number } {
+  let repairedCount = 0;
+  const repaired = (sources || []).map((source) => {
+    if (source.type !== "search" || source.url || source.canonicalUrl) return source;
+    const discovery = discoveryForSource(source, discovered);
+    if (!discovery?.canonicalUrl) return source;
+    repairedCount += 1;
+    return {
+      ...source,
+      url: discovery.url,
+      canonicalUrl: discovery.canonicalUrl,
+      provider: source.provider || discovery.provider,
+      description: source.description || discovery.description,
+      relevance: source.relevance || discovery.relevance,
+      relevanceReason: source.relevanceReason || discovery.relevanceReason,
+      sourceKind: source.sourceKind || discovery.sourceKind,
+    };
+  });
+  return { sources: repaired, repairedCount };
+}
+
 export function normaliseExtractedSources(
   topic: string,
   sources: Source[],

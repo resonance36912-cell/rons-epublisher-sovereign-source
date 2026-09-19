@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { normaliseExtractedSources, qualifyDiscoverySources, RESEARCH_SOURCE_LIMIT } from "@/lib/research-source-quality";
+import { normaliseExtractedSources, qualifyDiscoverySources, repairMissingSourceCitations, RESEARCH_SOURCE_LIMIT } from "@/lib/research-source-quality";
 import type { Source } from "@/components/storyforge/StoryForgeContext";
 
 const topic = "The History of Cape Coloured People";
@@ -73,6 +73,29 @@ describe("truthful extraction readiness", () => {
     const [result] = normaliseExtractedSources(topic, [source], qualifyDiscoverySources(topic, fixture));
     expect(result.url).toBe("https://www.youtube.com/watch?v=cape001");
     expect(result.canonicalUrl).toBe("https://www.youtube.com/watch?v=cape001");
+  });
+
+  it("repairs legacy title-only search records without altering already cited sources", () => {
+    const discovered = qualifyDiscoverySources(topic, fixture);
+    const legacy: Source = {
+      id: "legacy-repair",
+      type: "search",
+      title: "History of Cape Coloured People",
+      status: "ready",
+      content: "Evidence content",
+    };
+    const cited: Source = {
+      id: "already-cited",
+      type: "search",
+      title: "Cape Coloured Identity",
+      url: "https://example.org/already-cited",
+      status: "ready",
+      content: "Evidence content",
+    };
+    const result = repairMissingSourceCitations([legacy, cited], discovered);
+    expect(result.repairedCount).toBe(1);
+    expect(result.sources[0].canonicalUrl).toBe("https://www.youtube.com/watch?v=cape001");
+    expect(result.sources[1].url).toBe("https://example.org/already-cited");
   });
 
   it("recovers a missing citation from the requested URL order when extraction preserves job order", () => {

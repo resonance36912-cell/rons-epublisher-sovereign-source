@@ -1,9 +1,12 @@
 import { useMemo, useState } from "react";
 import {
   AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, Edit3, Info,
-  ShieldCheck, Volume2, Wrench, XCircle,
+  Link2, Loader2, ShieldCheck, Volume2, Wrench, XCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { discoverSources } from "@/lib/storyforge-api";
+import { repairMissingSourceCitations } from "@/lib/research-source-quality";
 import type { SlideChapter, Source, StoryConfig } from "./StoryForgeContext";
 import {
   READINESS_CATEGORY_LABELS,
@@ -20,6 +23,7 @@ type Props = {
   sources: Source[];
   config: StoryConfig;
   setConfig: React.Dispatch<React.SetStateAction<StoryConfig>>;
+  setSources: React.Dispatch<React.SetStateAction<Source[]>>;
   setChapters: React.Dispatch<React.SetStateAction<SlideChapter[]>>;
   onJumpToChapter?: (chapterIndex: number) => void;
 };
@@ -41,9 +45,11 @@ function severityClass(severity: PublicationReadinessIssue["severity"]) {
 }
 
 export function PublicationReadinessPanel({
-  chapters, sources, config, setConfig, setChapters, onJumpToChapter,
+  chapters, sources, config, setConfig, setSources, setChapters, onJumpToChapter,
 }: Props) {
+  const { toast } = useToast();
   const [expanded, setExpanded] = useState(true);
+  const [repairingCitations, setRepairingCitations] = useState(false);
   const allIssues = useMemo(
     () => analysePublicationReadiness(chapters, sources, config),
     [chapters, sources, config],
@@ -65,6 +71,38 @@ export function PublicationReadinessPanel({
     };
   }, [chapters]);
   const approved = config.approvedManuscriptRevision === currentRevision;
+  const uncitableSourceCount = useMemo(
+    () => sources.filter((source) => source.type === "search" && !source.url && !source.canonicalUrl).length,
+    [sources],
+  );
+
+  const repairCitations = async () => {
+    if (repairingCitations || uncitableSourceCount === 0) return;
+    if (!config.topic.trim()) {
+      toast({ title: "Citation repair unavailable", description: "Add a project topic before recovering citation locations.", variant: "destructive" });
+      return;
+    }
+    setRepairingCitations(true);
+    try {
+      const discovery = await discoverSources(config.topic);
+      const repaired = repairMissingSourceCitations(sources, discovery.sources);
+      if (repaired.repairedCount > 0) setSources(repaired.sources);
+      toast({
+        title: repaired.repairedCount > 0 ? "Citation locations recovered" : "No exact citation matches found",
+        description: repaired.repairedCount > 0
+          ? `${repaired.repairedCount} source citation${repaired.repairedCount === 1 ? "" : "s"} restored from exact public-source title matches.`
+          : "No source was changed. Re-open Research & Verify to select the exact original URLs.",
+      });
+    } catch (error) {
+      toast({
+        title: "Citation repair failed",
+        description: error instanceof Error ? error.message : "Public source lookup failed.",
+        variant: "destructive",
+      });
+    } finally {
+      setRepairingCitations(false);
+    }
+  };
 
   const grouped = useMemo(() => {
     const map = new Map<ReadinessCategory, PublicationReadinessIssue[]>();
@@ -146,6 +184,31 @@ export function PublicationReadinessPanel({
           {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
         </button>
       </div>
+
+      {uncitableSourceCount > 0 && (
+        <div className="rounded-lg border border-amber-500/35 bg-amber-500/5 p-3 flex flex-wrap items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-xs font-semibold flex items-center gap-1.5">
+              <Link2 className="w-3.5 h-3.5 text-amber-400" />
+              Recover missing citation locations
+            </p>
+            <p className="text-[10px] text-muted-foreground mt-1">
+              {uncitableSourceCount} retained search record{uncitableSourceCount === 1 ? "" : "s"} lost the original URL. This one-time public lookup only restores exact title-matched citation locations; it does not add new evidence.
+            </p>
+          </div>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            disabled={repairingCitations}
+            onClick={repairCitations}
+            className="gap-1.5"
+          >
+            {repairingCitations ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Link2 className="w-3.5 h-3.5" />}
+            {repairingCitations ? "Recovering…" : "Recover citation URLs"}
+          </Button>
+        </div>
+      )}
 
       <div className="rounded-lg border border-border/50 bg-card/50 p-3 flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">

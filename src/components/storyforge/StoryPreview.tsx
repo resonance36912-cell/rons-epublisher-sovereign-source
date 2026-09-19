@@ -83,7 +83,7 @@ function ChapterSlide({ chapter, index, sources, prefs }: { chapter: SlideChapte
 }
 
 export function StoryPreview() {
-  const { chapters, setChapters, sources, config, setConfig, setStep, projectId } = useStoryForge();
+  const { chapters, setChapters, sources, setSources, config, setConfig, setStep, projectId } = useStoryForge();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [viewMode, setViewMode] = useState<"slides" | "readAll">("slides");
   const [regenerating, setRegenerating] = useState(false);
@@ -284,6 +284,7 @@ export function StoryPreview() {
           sources={sources}
           config={config}
           setConfig={setConfig}
+          setSources={setSources}
           setChapters={setChapters}
           onJumpToChapter={(chIdx) => { setViewMode("slides"); setCurrentSlide(chIdx); }}
         />
@@ -346,6 +347,7 @@ export function StoryPreview() {
             sources={sources}
             config={config}
             setConfig={setConfig}
+            setSources={setSources}
             setChapters={setChapters}
             onJumpToChapter={(chIdx) => setCurrentSlide(chIdx)}
           />
