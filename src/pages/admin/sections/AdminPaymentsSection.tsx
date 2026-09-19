@@ -10,10 +10,10 @@ export function AdminPaymentsSection() {
       <div className="px-6 py-4 border-b flex items-center justify-between">
         <div className="flex items-center gap-2">
           <CreditCard className="w-4 h-4 text-primary" />
-          <h2 className="font-semibold">Payfast Payments</h2>
+          <h2 className="font-semibold">Historical payment audit</h2>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">{payments.length} records</span>
+          <span className="text-sm text-muted-foreground">Read-only · {payments.length} records</span>
           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={fetchPayments} disabled={paymentsLoading}>
             <RefreshCw className={`w-4 h-4 ${paymentsLoading ? "animate-spin" : ""}`} />
           </Button>
@@ -32,7 +32,7 @@ export function AdminPaymentsSection() {
               </div>
               <div>
                 <p className="text-lg font-bold">R {(totalRevenue / 100).toLocaleString("en-ZA", { minimumFractionDigits: 2 })}</p>
-                <p className="text-xs text-muted-foreground">Total Revenue</p>
+                <p className="text-xs text-muted-foreground">Recorded historical revenue</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -41,7 +41,7 @@ export function AdminPaymentsSection() {
               </div>
               <div>
                 <p className="text-lg font-bold">{purchases.length}</p>
-                <p className="text-xs text-muted-foreground">Purchases</p>
+                <p className="text-xs text-muted-foreground">Historical purchases</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -50,7 +50,7 @@ export function AdminPaymentsSection() {
               </div>
               <div>
                 <p className="text-lg font-bold">{uniqueBuyers}</p>
-                <p className="text-xs text-muted-foreground">Unique Buyers</p>
+                <p className="text-xs text-muted-foreground">Historical buyers</p>
               </div>
             </div>
           </div>

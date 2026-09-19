@@ -67,7 +67,7 @@ type AdminContextValue = {
   setThresholdInput: (s: string) => void;
   costThresholdExceeded: boolean;
 
-  // Payments
+  // Historical payment audit
   payments: PayfastPayment[];
   paymentsLoading: boolean;
   fetchPayments: () => Promise<void>;
