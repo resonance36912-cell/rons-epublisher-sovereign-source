@@ -5,6 +5,7 @@ import { tierMeets, type Tier } from "@/lib/hub";
 import { UpgradeButton } from "@/components/UpgradeButton";
 import { Button } from "@/components/ui/button";
 import type { UpgradeRequiredBody } from "@/lib/hub-402";
+import { FREE_PROMOTION_ACTIVE } from "@/lib/promotion";
 
 interface PaywallGateProps {
   /** Minimum tier required to view children. */
@@ -40,6 +41,7 @@ export function PaywallGate({
   const { effectiveTier, isLoggedIn } = useUserTier();
   const have: Tier = isLoggedIn ? (effectiveTier as Tier) : null;
 
+  if (FREE_PROMOTION_ACTIVE) return <>{children}</>;
   if (tierMeets(have, tier)) return <>{children}</>;
 
   if (fallback) return <>{fallback}</>;

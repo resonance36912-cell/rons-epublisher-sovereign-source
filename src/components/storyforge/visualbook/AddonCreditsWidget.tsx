@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { ADDON_CREDITS_CHANGED } from "@/lib/addon-credits-events";
+import { FREE_PROMOTION_ACTIVE, FREE_PROMOTION } from "@/lib/promotion";
 
 type Credits = { image: number; tts: number };
 
@@ -81,6 +82,7 @@ export function AddonCreditsWidget() {
   };
 
   useEffect(() => {
+    if (FREE_PROMOTION_ACTIVE) return;
     fetchCredits();
     // Debounce rapid bursts (e.g. batch narration) into one refresh.
     let t: number | undefined;
@@ -96,6 +98,16 @@ export function AddonCreditsWidget() {
   }, []);
 
   const hasAny = (credits?.image ?? 0) > 0 || (credits?.tts ?? 0) > 0;
+
+  if (FREE_PROMOTION_ACTIVE) {
+    return (
+      <div className="flex items-center gap-2 bg-primary/5 border border-primary/20 rounded-lg px-4 py-2.5 text-xs">
+        <Sparkles className="w-3.5 h-3.5 text-primary" />
+        <span className="font-medium text-foreground">{FREE_PROMOTION.shortLabel}</span>
+        <span className="text-muted-foreground">Image and narration top-ups are not required during promotional access.</span>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-1.5 bg-primary/5 border border-primary/20 rounded-lg px-4 py-2.5 text-xs">

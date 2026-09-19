@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { FALLBACK_CREDIT_PACKS } from "@/lib/credit-packs";
+import { FREE_PROMOTION_ACTIVE } from "@/lib/promotion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -176,6 +177,10 @@ export function AdminCreditPacksManager() {
   };
 
   const startTestCheckout = async (row: PackRow) => {
+    if (FREE_PROMOTION_ACTIVE) {
+      toast.message("Payment test checkout is disabled during the free-access promotion.");
+      return;
+    }
     setTestCheckout({
       packId: row.id,
       packName: row.name,

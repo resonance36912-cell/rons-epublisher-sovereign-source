@@ -5,6 +5,7 @@ import {
   subscribePricingMismatches,
   type PriceMismatch,
 } from "@/lib/hub-pricing-check";
+import { FREE_PROMOTION_ACTIVE } from "@/lib/promotion";
 
 /**
  * Mounts once at the app root. Silently runs a Hub-vs-local price
@@ -17,12 +18,13 @@ export function HubPricingMismatchBanner() {
   const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
+    if (FREE_PROMOTION_ACTIVE) return;
     const unsub = subscribePricingMismatches(setMismatches);
     void runHubPricingCheck();
     return unsub;
   }, []);
 
-  if (dismissed || mismatches.length === 0) return null;
+  if (FREE_PROMOTION_ACTIVE || dismissed || mismatches.length === 0) return null;
 
   return (
     <div

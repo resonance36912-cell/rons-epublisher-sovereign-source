@@ -7,6 +7,7 @@
 // service in sessionStorage so each request doesn't re-prompt.
 import { getQuotaStatus } from "@/lib/usage-limits";
 import { supabase } from "@/integrations/supabase/client";
+import { FREE_PROMOTION_ACTIVE } from "@/lib/promotion";
 
 export type PremiumService = "elevenlabs-tts" | "generate-chapter-image";
 
@@ -77,6 +78,7 @@ export async function ensurePremiumQuota(
   // Anonymous calls bypass — they'll be denied server-side anyway.
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return true;
+  if (FREE_PROMOTION_ACTIVE) return true;
 
   const status = await getQuotaStatus(service);
   if (!status) return true; // fail open

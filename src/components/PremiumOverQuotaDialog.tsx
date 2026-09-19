@@ -8,11 +8,22 @@ import { AlertTriangle, Coins, Sparkles, TrendingUp } from "lucide-react";
 import { subscribePremiumOverQuotaRequests, type OverQuotaConsentRequest } from "@/lib/premium-quota-gate";
 import { HUB_PRICING_URL, hubTopupUrl } from "@/lib/hub";
 import { logTopupCheckout } from "@/lib/payfast-checkout-log";
+import { FREE_PROMOTION_ACTIVE } from "@/lib/promotion";
 
 export function PremiumOverQuotaDialog() {
   const [req, setReq] = useState<OverQuotaConsentRequest | null>(null);
 
-  useEffect(() => subscribePremiumOverQuotaRequests((r) => setReq(r)), []);
+  useEffect(
+    () =>
+      subscribePremiumOverQuotaRequests((r) => {
+        if (FREE_PROMOTION_ACTIVE) {
+          r.resolve(true);
+          return;
+        }
+        setReq(r);
+      }),
+    [],
+  );
 
   const decide = (consent: boolean) => {
     if (!req) return;
@@ -20,7 +31,7 @@ export function PremiumOverQuotaDialog() {
     setReq(null);
   };
 
-  if (!req) return null;
+  if (FREE_PROMOTION_ACTIVE || !req) return null;
 
   const est = req.estimatedUnits;
   const estCost = est ? est * req.perUnitCost : null;

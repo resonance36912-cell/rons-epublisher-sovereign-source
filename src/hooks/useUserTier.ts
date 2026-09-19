@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useHubEntitlement } from "@/hooks/useHubEntitlement";
 import { OPEN_NOVA_LOCAL_ONLY } from "@/lib/sovereign-mode";
+import { FREE_PROMOTION_ACTIVE } from "@/lib/promotion";
 
 
 /**
@@ -101,19 +102,23 @@ export function useUserTier() {
         .select("*");
       return data || [];
     },
-    enabled: !OPEN_NOVA_LOCAL_ONLY && !!userId,
+    enabled: !FREE_PROMOTION_ACTIVE && !OPEN_NOVA_LOCAL_ONLY && !!userId,
   });
 
   // Hub entitlement (REST). When the Hub returns an active tier, it wins
   // over the local purchases table (Hub is the billing source of truth).
   const { data: hubEnt } = useHubEntitlement();
 
-  let effectiveTier: EffectiveTier = OPEN_NOVA_LOCAL_ONLY
-    ? "business"
-    : resolveEffectiveTier((purchases ?? []).map((p) => p.price_id));
+  let effectiveTier: EffectiveTier =
+    OPEN_NOVA_LOCAL_ONLY || (FREE_PROMOTION_ACTIVE && !!userId)
+      ? "business"
+      : resolveEffectiveTier((purchases ?? []).map((p) => p.price_id));
 
-  const creditsRemaining = Math.max(0, Number(hubEnt?.creditsRemaining ?? 0) || 0);
-  const hasPaidCredits = creditsRemaining > 0;
+  const creditsRemaining =
+    FREE_PROMOTION_ACTIVE && !!userId
+      ? Number.POSITIVE_INFINITY
+      : Math.max(0, Number(hubEnt?.creditsRemaining ?? 0) || 0);
+  const hasPaidCredits = FREE_PROMOTION_ACTIVE && !!userId ? true : creditsRemaining > 0;
 
   if (
     hubEnt?.source === "hub" &&

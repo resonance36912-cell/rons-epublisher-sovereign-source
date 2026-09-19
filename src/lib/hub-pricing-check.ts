@@ -6,6 +6,7 @@
 import { HUB_URL, APP_KEY, EPUBLISHER_PACKS, type HubPackId } from "@/lib/hub";
 import { trackEvent } from "@/lib/analytics";
 import { OPEN_NOVA_LOCAL_ONLY } from "@/lib/sovereign-mode";
+import { FREE_PROMOTION_ACTIVE } from "@/lib/promotion";
 
 /**
  * Legacy lifetime-price table retained only for historical audit helpers.
@@ -66,6 +67,7 @@ function emit(mismatches: PriceMismatch[]) {
 
 /** Fetch + diff. Returns [] when Hub is unreachable (treated as "no signal"). */
 export async function runHubPricingCheck(options: { force?: boolean } = {}): Promise<PriceMismatch[]> {
+  if (FREE_PROMOTION_ACTIVE) return [];
   if (typeof window === "undefined") return [];
   if (OPEN_NOVA_LOCAL_ONLY) {
     sessionStorage.setItem(SESSION_FLAG, "ok");

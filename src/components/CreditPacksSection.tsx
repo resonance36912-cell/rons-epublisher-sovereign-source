@@ -6,12 +6,14 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchActiveCreditPacks, FALLBACK_CREDIT_PACKS, type CreditPack } from "@/lib/credit-packs";
 import { trackEvent } from "@/lib/analytics";
+import { FREE_PROMOTION_ACTIVE, FREE_PROMOTION } from "@/lib/promotion";
 
 export function CreditPacksSection() {
   const [packs, setPacks] = useState<CreditPack[]>(FALLBACK_CREDIT_PACKS);
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
   useEffect(() => {
+    if (FREE_PROMOTION_ACTIVE) return;
     let cancelled = false;
     fetchActiveCreditPacks().then((rows) => {
       if (!cancelled && rows.length > 0) setPacks(rows);
@@ -23,7 +25,29 @@ export function CreditPacksSection() {
 
   const cheapest = packs.reduce((min, p) => Math.min(min, p.priceZAR), Infinity);
 
+  if (FREE_PROMOTION_ACTIVE) {
+    return (
+      <section className="py-14 px-4" aria-labelledby="credit-packs-heading">
+        <div className="max-w-3xl mx-auto rounded-2xl border border-primary/25 bg-primary/5 p-8 text-center">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-primary/30 bg-primary/5 text-xs font-mono uppercase tracking-[0.22em] text-primary mb-4">
+            <Sparkles className="w-3 h-3" /> {FREE_PROMOTION.shortLabel}
+          </div>
+          <h2 id="credit-packs-heading" className="text-3xl font-display font-extrabold tracking-tight">
+            Credit purchases are paused
+          </h2>
+          <p className="mt-3 text-muted-foreground">
+            {FREE_PROMOTION.description} Image generation, narration, publishing, and export access are included during the promotion.
+          </p>
+        </div>
+      </section>
+    );
+  }
+
   const handleBuy = async (pack: CreditPack) => {
+    if (FREE_PROMOTION_ACTIVE) {
+      toast.message("Credit purchases are paused during the free-access promotion.");
+      return;
+    }
     setLoadingId(pack.id);
     try {
       const { data: session } = await supabase.auth.getSession();

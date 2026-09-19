@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { OPEN_NOVA_LOCAL_ONLY } from "@/lib/sovereign-mode";
 import { runHubPricingCheck } from "@/lib/hub-pricing-check";
-import { fetchActiveCreditPacks, fetchCreditPack, FALLBACK_CREDIT_PACKS } from "@/lib/credit-packs";
+import { fetchActiveCreditPacks, fetchCreditPack } from "@/lib/credit-packs";
 import { supabase } from "@/integrations/supabase/client";
 
 describe("sovereign-local billing fallback", () => {
@@ -14,10 +14,10 @@ describe("sovereign-local billing fallback", () => {
     fetchSpy.mockRestore();
   });
 
-  it("serves seeded credit packs without querying Supabase", async () => {
+  it("suppresses credit-pack billing lookups in local promotion mode", async () => {
     const fromSpy = vi.spyOn(supabase, "from");
-    expect(await fetchActiveCreditPacks()).toEqual(FALLBACK_CREDIT_PACKS);
-    expect(await fetchCreditPack("pack_creator")).toEqual(FALLBACK_CREDIT_PACKS[2]);
+    expect(await fetchActiveCreditPacks()).toEqual([]);
+    expect(await fetchCreditPack("pack_creator")).toBeNull();
     expect(fromSpy).not.toHaveBeenCalled();
     fromSpy.mockRestore();
   });
