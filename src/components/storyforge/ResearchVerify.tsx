@@ -35,7 +35,7 @@ export function ResearchVerify() {
   const { config, setConfig, sources, setSources, setStep } = useStoryForge();
   const { toast } = useToast();
   const { t } = useI18n();
-  const suppliedOnly = (config.sourcePolicy || "supplied_only") === "supplied_only";
+  const suppliedOnly = (config.sourcePolicy || "supplementary_research") === "supplied_only";
   const suppliedUrls = sources.filter((source) => source.type === "url");
   const readySuppliedSources = sources.filter((source) => source.type !== "search" && source.status === "ready" && !!source.content?.trim());
   const initialPhase: VerifyPhase = suppliedOnly
@@ -72,8 +72,8 @@ export function ResearchVerify() {
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const runDiscovery = async () => {
-    if (suppliedOnly) {
+  const runDiscovery = async (forcePublic = false) => {
+    if (suppliedOnly && !forcePublic) {
       setDiscovered([]);
       setError("");
       if (suppliedUrls.length === 0 && readySuppliedSources.length > 0) {
@@ -375,6 +375,30 @@ export function ResearchVerify() {
                 : `${quality.recommended} recommended · ${quality.needsReview} needs review · ${quality.excluded} excluded`}
             </div>
           </div>
+          {suppliedOnly && manualUrlCount === 0 && readySuppliedSources.length === 0 && (
+            <div className="rounded-xl border border-primary/30 bg-primary/5 p-5 space-y-3">
+              <div>
+                <h3 className="text-sm font-semibold">No supplied evidence is available</h3>
+                <p className="text-xs text-muted-foreground mt-1">
+                  This topic has no URL or uploaded evidence, so supplied-only mode has nothing to verify. Enable supplementary public research to discover relevant public sources, or go back and add your own source.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  onClick={() => {
+                    setConfig((current) => ({ ...current, sourcePolicy: "supplementary_research" }));
+                    void runDiscovery(true);
+                  }}
+                  className="gap-2"
+                >
+                  <Search className="w-4 h-4" /> Enable public research
+                </Button>
+                <Button variant="outline" onClick={() => setStep(0)} className="gap-2">
+                  <FileText className="w-4 h-4" /> Add URL or file
+                </Button>
+              </div>
+            </div>
+          )}
           {!suppliedOnly && (
             <div className="flex flex-wrap gap-2 justify-end">
               <Button variant="outline" size="sm" onClick={selectRecommended}>Select recommended</Button>

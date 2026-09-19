@@ -268,7 +268,7 @@ export function ReviewConfigure() {
           <label className="space-y-1.5 text-xs font-medium text-muted-foreground">
             Source policy
             <Select
-              value={config.sourcePolicy || "supplied_only"}
+              value={config.sourcePolicy || "supplementary_research"}
               onValueChange={(v) => setConfig((c) => ({ ...c, sourcePolicy: v as NonNullable<typeof c.sourcePolicy> }))}
             >
               <SelectTrigger className="bg-background text-foreground"><SelectValue /></SelectTrigger>
