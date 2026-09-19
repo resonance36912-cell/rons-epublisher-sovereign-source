@@ -22,6 +22,7 @@ import { oversizedToast } from "./AiOversizedBanner";
 import { ThemeTonePreview } from "./ThemeTonePreview";
 import { ThemeTonePresets } from "./ThemeTonePresets";
 import { OPEN_NOVA_LOCAL_ONLY } from "@/lib/sovereign-mode";
+import { FREE_PROMOTION_ACTIVE } from "@/lib/promotion";
 import { getFreeCloudQualityEnabled, parseHybridJson, requestHybridText } from "@/lib/free-cloud-quality";
 
 
@@ -719,19 +720,23 @@ export function StorylineEditor() {
                   {rewriteBlocked && summariesOverLimit && !chapterCountOverLimit && (
                     <div className="flex items-center justify-between gap-2 pt-2 border-t border-destructive/20 flex-wrap">
                       <span className="text-[11px] font-normal text-destructive/80">
-                        Need a bigger budget? Top up credits to rewrite longer storybooks in one pass.
+                        {FREE_PROMOTION_ACTIVE
+                          ? "This rewrite exceeds the single-pass safety budget. Select fewer chapters or shorten the storyline; promotional access remains free."
+                          : "Need a bigger budget? Top up credits to rewrite longer storybooks in one pass."}
                       </span>
-                      <Button
-                        asChild
-                        size="sm"
-                        variant="outline"
-                        className="h-7 px-2.5 text-[11px] gap-1 shrink-0 border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                      >
-                        <Link to="/pricing">
-                          <Plus className="w-3 h-3" />
-                          Buy extra credits
-                        </Link>
-                      </Button>
+                      {!FREE_PROMOTION_ACTIVE && (
+                        <Button
+                          asChild
+                          size="sm"
+                          variant="outline"
+                          className="h-7 px-2.5 text-[11px] gap-1 shrink-0 border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                        >
+                          <Link to="/pricing">
+                            <Plus className="w-3 h-3" />
+                            Buy extra credits
+                          </Link>
+                        </Button>
+                      )}
                     </div>
                   )}
                 </div>

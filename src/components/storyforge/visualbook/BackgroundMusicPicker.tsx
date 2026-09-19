@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Music, Play, Square, Volume2, Lock, Crown, Sparkles } from "lucide-react";
 import { useUserTier } from "@/hooks/useUserTier";
 import { useI18n } from "@/lib/i18n";
+import { FREE_PROMOTION_ACTIVE } from "@/lib/promotion";
 
 export function BackgroundMusicPicker() {
   const { config, setConfig } = useStoryForge();
@@ -13,7 +14,7 @@ export function BackgroundMusicPicker() {
   const [previewTrackId, setPreviewTrackId] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  const isPremiumUser = tier === "premium";
+  const isPremiumUser = FREE_PROMOTION_ACTIVE || tier === "premium";
 
   const stopPreview = useCallback(() => {
     if (audioRef.current) {
@@ -62,7 +63,7 @@ export function BackgroundMusicPicker() {
         <p className="text-sm font-medium">Background Music</p>
         {selectedTrack && selectedTrack.id !== "none" && (
           <Badge variant="secondary" className="text-[10px] ml-auto">
-            {selectedTrack.tier === "premium" ? "✨ Premium" : "🎵 Free"} · {selectedTrack.label}
+            {selectedTrack.tier === "premium" ? (FREE_PROMOTION_ACTIVE ? "✨ Enhanced" : "✨ Premium") : (FREE_PROMOTION_ACTIVE ? "🎵 Standard" : "🎵 Free")} · {selectedTrack.label}
           </Badge>
         )}
       </div>
@@ -72,7 +73,7 @@ export function BackgroundMusicPicker() {
 
       {/* Free tracks */}
       <div className="space-y-2">
-        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Free Tracks</p>
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{FREE_PROMOTION_ACTIVE ? "Standard Tracks" : "Free Tracks"}</p>
         <div className="grid gap-1.5">
           {freeTracks.map((track) => (
             <TrackRow
@@ -92,7 +93,7 @@ export function BackgroundMusicPicker() {
       <div className="space-y-2">
         <div className="flex items-center gap-1.5">
           <Crown className="w-3 h-3 text-primary" />
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Premium Tracks</p>
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{FREE_PROMOTION_ACTIVE ? "Enhanced Tracks" : "Premium Tracks"}</p>
         </div>
         <div className="grid gap-1.5">
           {premiumTracks.map((track) => (
@@ -110,6 +111,11 @@ export function BackgroundMusicPicker() {
         {!isPremiumUser && (
           <p className="text-[10px] text-muted-foreground flex items-center gap-1">
             <Lock className="w-3 h-3" /> Upgrade to Premium to unlock these tracks
+          </p>
+        )}
+        {FREE_PROMOTION_ACTIVE && (
+          <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+            <Sparkles className="w-3 h-3 text-primary" /> All music tracks are included during promotional access.
           </p>
         )}
       </div>

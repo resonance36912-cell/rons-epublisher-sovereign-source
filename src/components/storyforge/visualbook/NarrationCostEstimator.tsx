@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Calculator, AlertTriangle, Lock } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { getQuotaStatus, type QuotaStatus } from "@/lib/usage-limits";
+import { FREE_PROMOTION_ACTIVE, FREE_PROMOTION } from "@/lib/promotion";
 
 type Props = {
   /** Total characters that will be sent to the narration provider. */
@@ -29,12 +30,27 @@ export function NarrationCostEstimator({ totalChars, provider, cachedChars = 0 }
 
   useEffect(() => {
     let alive = true;
+    if (FREE_PROMOTION_ACTIVE) {
+      setLoading(false);
+      return () => { alive = false; };
+    }
     setLoading(true);
     getQuotaStatus("elevenlabs-tts")
       .then((q) => { if (alive) { setQuota(q); setLoading(false); } })
       .catch(() => { if (alive) setLoading(false); });
     return () => { alive = false; };
   }, []);
+
+  const billable = Math.max(0, totalChars - cachedChars);
+
+  if (FREE_PROMOTION_ACTIVE) {
+    return (
+      <div className="text-[10px] text-muted-foreground inline-flex items-center gap-1">
+        <Calculator className="w-3 h-3" />
+        {FREE_PROMOTION.shortLabel} · ~{fmt(billable)} chars · no payment required
+      </div>
+    );
+  }
 
   // Only relevant for premium narration. Browser TTS is free.
   if (provider !== "elevenlabs") {
@@ -45,8 +61,6 @@ export function NarrationCostEstimator({ totalChars, provider, cachedChars = 0 }
       </div>
     );
   }
-
-  const billable = Math.max(0, totalChars - cachedChars);
 
   if (loading || !quota) {
     return (

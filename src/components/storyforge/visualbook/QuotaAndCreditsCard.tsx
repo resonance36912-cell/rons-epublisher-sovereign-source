@@ -6,6 +6,7 @@ import { AddonCreditsWidget } from "./AddonCreditsWidget";
 import { PlanCreditsBadge } from "@/components/PlanCreditsBadge";
 import { usePlanCredits } from "@/hooks/usePlanCredits";
 import { OPEN_NOVA_LOCAL_ONLY } from "@/lib/sovereign-mode";
+import { FREE_PROMOTION_ACTIVE, FREE_PROMOTION } from "@/lib/promotion";
 
 /**
  * Unified collapsible card combining tier quotas and add-on credits.
@@ -16,10 +17,11 @@ import { OPEN_NOVA_LOCAL_ONLY } from "@/lib/sovereign-mode";
 export function QuotaAndCreditsCard() {
   const { empty, loading } = usePlanCredits();
 
-  if (OPEN_NOVA_LOCAL_ONLY) {
+  if (FREE_PROMOTION_ACTIVE || OPEN_NOVA_LOCAL_ONLY) {
     return (
       <div className="border rounded-lg bg-card/50 px-4 py-3 text-xs text-muted-foreground">
-        Open Nova local mode: credit and quota services are bypassed. Browser/local features do not consume Resonance or Lovable credits.
+        <span className="font-medium text-foreground">{FREE_PROMOTION_ACTIVE ? FREE_PROMOTION.shortLabel : "Open Nova local mode"}:</span>{" "}
+        all ePublisher features are available without payment. Usage is metered internally for costing, while provider safety and fair-use limits still apply.
       </div>
     );
   }
