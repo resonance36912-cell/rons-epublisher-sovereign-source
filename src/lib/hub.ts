@@ -14,29 +14,39 @@ export function tierMeets(have: Tier, need: Exclude<Tier, null | "free">): boole
 }
 
 export type LifetimeTier = "starter" | "creator" | "pro" | "business";
-export type CreditPack = "pack_taste" | "pack_starter" | "pack_creator" | "pack_studio";
 
-/** Map a plan name to its canonical Hub SKU. */
+/** Canonical Hub pack IDs for new ePublisher purchases. */
+export type HubPackId =
+  | "epublisher_starter_pack"
+  | "epublisher_creator_pack"
+  | "epublisher_studio_pack";
+
+export const EPUBLISHER_PACKS = [
+  { id: "epublisher_starter_pack", name: "Starter Pack", price: "R99", credits: 99, blurb: "First-book kit" },
+  { id: "epublisher_creator_pack", name: "Creator Pack", price: "R299", credits: 299, blurb: "For active authors" },
+  { id: "epublisher_studio_pack", name: "Studio Pack", price: "R699", credits: 699, blurb: "Backlist migration" },
+] as const satisfies ReadonlyArray<{ id: HubPackId; name: string; price: string; credits: number; blurb: string }>;
+
+/** Legacy lifetime IDs remain readable for historical purchases only. */
 export function lifetimeSku(plan: LifetimeTier): string {
   return `lifetime_${plan}`;
 }
 
 /**
- * Build a Hub checkout URL for a lifetime tier unlock. The Hub is
- * the one signing PayFast; we just deep-link with the SKU + return_to.
+ * Legacy compatibility entry point. Lifetime SKUs are historical only, so any
+ * old caller is redirected to the Hub pricing authority instead of constructing
+ * an invalid checkout URL.
  */
 export function hubCheckoutUrl(
-  plan: LifetimeTier | "bundle" = "creator",
+  _plan: LifetimeTier | "bundle" = "creator",
 ): string {
-  const returnTo = typeof window !== "undefined" ? window.location.href : "/";
-  const sku = plan === "bundle" ? "bundle" : lifetimeSku(plan);
-  return `${HUB_URL}/checkout?app=${APP_KEY}&sku=${sku}&return_to=${encodeURIComponent(returnTo)}`;
+  return `${HUB_URL}/pricing#epublisher`;
 }
 
-/** Build a Hub credit-pack (top-up) checkout URL. */
-export function hubPackCheckoutUrl(packId: CreditPack): string {
+/** Build a canonical Hub once-off pack checkout URL. */
+export function hubPackCheckoutUrl(packId: HubPackId): string {
   const returnTo = typeof window !== "undefined" ? window.location.href : "/";
-  return `${HUB_URL}/checkout?app=${APP_KEY}&sku=${packId}&return_to=${encodeURIComponent(returnTo)}`;
+  return `${HUB_URL}/checkout?pack=${encodeURIComponent(packId)}&return_to=${encodeURIComponent(returnTo)}`;
 }
 
 export const HUB_PRICING_URL = `${HUB_URL}/pricing` as const;
@@ -44,8 +54,7 @@ export const HUB_BILLING_URL = `${HUB_URL}/account` as const;
 export const HUB_SUPPORT_URL = `${HUB_URL}/support` as const;
 export const HUB_UPDATES_URL = `${HUB_URL}/updates` as const;
 
-/** Generic top-up entry (Hub picks default pack). */
+/** Generic top-up entry: delegate pack selection to the Hub authority. */
 export function hubTopupUrl(): string {
-  const returnTo = typeof window !== "undefined" ? window.location.href : "/";
-  return `${HUB_URL}/checkout?app=${APP_KEY}&product=topup&return_to=${encodeURIComponent(returnTo)}`;
+  return `${HUB_URL}/pricing#epublisher`;
 }

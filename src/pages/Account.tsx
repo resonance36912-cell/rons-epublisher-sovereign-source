@@ -114,7 +114,7 @@ export default function Account() {
           <div>
             <h2 className="text-lg font-semibold">Plan &amp; credits</h2>
             <p className="text-sm text-muted-foreground">
-              Your current unlock tier and the credits available to spend.
+              Your current access status and the credits available to spend.
             </p>
           </div>
           <PlanCreditsBadge />

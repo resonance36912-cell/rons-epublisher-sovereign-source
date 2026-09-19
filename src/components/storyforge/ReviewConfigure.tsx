@@ -60,8 +60,9 @@ export function ReviewConfigure() {
   const { sources, config, setConfig, setStep } = useStoryForge();
   const { t } = useI18n();
   const { toast } = useToast();
-  const { tier } = useUserTier();
-  const isFreeTier = tier === "free";
+  const { tier, hasPaidCredits } = useUserTier();
+  const isFreeTier = tier === "free" && !hasPaidCredits;
+  const narrationTier = isFreeTier ? "free" : tier === "free" ? "standard" : tier;
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -71,7 +72,7 @@ export function ReviewConfigure() {
   // ElevenLabs voice/demeanour into a Free session and never leave Premium
   // with an empty voice id.
   useEffect(() => {
-    const normalized = normalizeNarrationForTier(config, tier);
+    const normalized = normalizeNarrationForTier(config, narrationTier);
     if (normalized !== config) {
       setConfig((c) => ({ ...c, ...normalized }));
       if (isFreeTier && config.narrationProvider === "elevenlabs") {
@@ -81,7 +82,7 @@ export function ReviewConfigure() {
         });
       }
     }
-  }, [tier, isFreeTier, config, setConfig, toast]);
+  }, [narrationTier, isFreeTier, config, setConfig, toast]);
 
   const playVoicePreview = useCallback(async () => {
     if (isPlaying && audioRef.current) {
@@ -620,7 +621,7 @@ export function ReviewConfigure() {
           onClick={() => {
             // Final safety net: normalize once more right before generation
             // so any drift between tier change and submit can't leak through.
-            const normalized = normalizeNarrationForTier(config, tier);
+            const normalized = normalizeNarrationForTier(config, narrationTier);
             if (normalized !== config) {
               setConfig((c) => ({ ...c, ...normalized }));
             }
