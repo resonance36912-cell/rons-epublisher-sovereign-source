@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowRight, Sparkles, BookOpen, Globe, Youtube, Upload, FileText, Music, Video, X, Palette, Mic, Link, Plus, PenLine, Loader2, Wand2, BookCheck } from "lucide-react";
+import { ArrowRight, Sparkles, BookOpen, Globe, Youtube, Upload, FileText, Music, Video, X, Palette, Mic, Link, Plus, PenLine, Loader2, Wand2, BookCheck, ShieldCheck } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { SpeechToText } from "./SpeechToText";
@@ -398,6 +398,39 @@ export function SourceInput() {
           </div>
         </div>
       </motion.div>
+
+      {/* Research source policy must be chosen before the research step. */}
+      <div className="w-full max-w-2xl rounded-xl border border-border/60 bg-card/40 p-4 space-y-2">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-sm font-medium">Research source policy</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Controls whether ePublisher may discover additional public-web sources or must use only material you supplied.
+            </p>
+          </div>
+          <ShieldCheck className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+        </div>
+        <Select
+          value={config.sourcePolicy || "supplied_only"}
+          onValueChange={(v) => setConfig((c) => ({
+            ...c,
+            sourcePolicy: v as NonNullable<typeof c.sourcePolicy>,
+          }))}
+        >
+          <SelectTrigger className="bg-background">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="supplied_only">Supplied sources only — no public discovery</SelectItem>
+            <SelectItem value="supplementary_research">Supplementary public research permitted</SelectItem>
+          </SelectContent>
+        </Select>
+        <p className="text-[11px] text-muted-foreground">
+          {config.sourcePolicy === "supplementary_research"
+            ? "The next step may discover public web/YouTube candidates in addition to your supplied files and URLs."
+            : "The next step will not run public discovery. Supplied URLs may still be fetched for extraction; supplied files remain local evidence."}
+        </p>
+      </div>
 
       {/* File Upload Area */}
       <div className="w-full max-w-2xl">
