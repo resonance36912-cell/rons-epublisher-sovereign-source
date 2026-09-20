@@ -77,3 +77,25 @@ jobs:
           DIGEST="$(docker inspect --format='{{index .RepoDigests 0}}' "${IMAGE}:${SOURCE_SHA}")"
           test -n "${DIGEST}"
           echo "Anonymous GHCR pull verified: ${DIGEST}"
+
+      - name: Smoke-test pulled image runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          NAME="epublisher-fallback-smoke"
+          cleanup() {
+            docker logs "${NAME}" 2>/dev/null || true
+            docker rm -f "${NAME}" >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+          docker run -d --name "${NAME}" -e PORT=3000 -p 127.0.0.1:3100:3000 "${IMAGE}:${SOURCE_SHA}"
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:3100/ -o /tmp/epublisher-index.html; then
+              grep -qi '<!doctype html' /tmp/epublisher-index.html
+              echo "Runtime smoke test passed on attempt ${attempt}"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Runtime smoke test failed" >&2
+          exit 1
