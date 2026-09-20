@@ -27,6 +27,21 @@ jobs:
         with:
           ref: ${{ env.SOURCE_SHA }}
 
+      - name: Create proven Node 22 fallback Dockerfile
+        shell: bash
+        run: |
+          cat > Dockerfile.railway-fallback <<'EOF'
+          FROM node:22-bookworm-slim
+          WORKDIR /app
+          COPY package.json package-lock.json ./
+          RUN npm ci
+          COPY . .
+          RUN npm run build
+          ENV HOST=0.0.0.0
+          EXPOSE 3000
+          CMD ["sh", "-c", "npm exec -- vite preview --host 0.0.0.0 --port ${PORT:-3000}"]
+          EOF
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -41,7 +56,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: ./Dockerfile
+          file: ./Dockerfile.railway-fallback
           platforms: linux/amd64
           push: true
           provenance: false
@@ -50,6 +65,7 @@ jobs:
           labels: |
             org.opencontainers.image.source=https://github.com/resonance36912-cell/rons-epublisher-sovereign-source
             org.opencontainers.image.revision=${{ env.SOURCE_SHA }}
+            org.opencontainers.image.description=RONSAS governed Railway fallback image built with repository-proven Node 22/npm CI toolchain
 
       - name: Verify anonymous pull
         shell: bash
