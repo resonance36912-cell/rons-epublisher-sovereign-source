@@ -1,0 +1,46 @@
+name: One-shot public ePublisher browser probe
+
+on:
+  push:
+    branches: [ronsas/public-browser-probe-20260922]
+    paths:
+      - ".github/workflows/one-shot-public-browser-probe-20260922.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Probe public domain with Chromium
+        shell: bash
+        run: |
+          set -euo pipefail
+          work="$RUNNER_TEMP/ronsas-browser-probe"
+          mkdir -p "$work"
+          cd "$work"
+          npm init -y >/dev/null 2>&1
+          npm install --no-audit --no-fund playwright@1.57.0 >/dev/null
+          npx playwright install chromium >/dev/null
+          cat > probe.mjs <<'JS'
+          import { chromium } from "playwright";
+          const browser = await chromium.launch({headless:true});
+          const page = await browser.newPage();
+          const result = {};
+          const response = await page.goto("https://epublisher.reson8.life/?ronsas_browser_probe=20260922", {
+            waitUntil: "domcontentloaded",
+            timeout: 45000,
+          });
+          result.status = response?.status() ?? 0;
+          result.url = page.url();
+          result.title = await page.title();
+          result.body = (await page.locator("body").innerText()).slice(0, 300);
+          const session = await page.request.get("https://epublisher.reson8.life/_rons/session", {timeout:30000});
+          result.sessionStatus = session.status();
+          console.log("RONSAS_BROWSER_RESULT=" + JSON.stringify(result));
+          if (result.status !== 200 || result.sessionStatus !== 200) process.exit(2);
+          await browser.close();
+          JS
+          node probe.mjs
