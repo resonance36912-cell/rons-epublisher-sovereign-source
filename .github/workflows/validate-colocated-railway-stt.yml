@@ -8,6 +8,7 @@ on:
       - "Dockerfile.railway-colocated-stt"
       - "scripts/start-railway-colocated-stt.sh"
       - ".github/workflows/validate-colocated-railway-stt.yml"
+      - ".github/workflows/publish-railway-fallback-image.yml"
       - "src/**"
       - "package.json"
       - "package-lock.json"
