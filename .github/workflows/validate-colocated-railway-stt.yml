@@ -11,6 +11,7 @@ on:
       - "src/**"
       - "package.json"
       - "package-lock.json"
+      - "vendor/ronsas-stt/**"
 
 permissions:
   contents: read
@@ -26,13 +27,6 @@ jobs:
     steps:
       - name: Check out ePublisher candidate
         uses: actions/checkout@v4
-
-      - name: Check out governed RONSAS STT source
-        uses: actions/checkout@v4
-        with:
-          repository: resonance36912-cell/RONSAS
-          ref: b26ec14f2f2377c09d72720ece65f47a40860de5
-          path: ronsas-stt
 
       - name: Build colocated fallback image
         run: docker build -f Dockerfile.railway-colocated-stt -t epublisher-colocated-stt:test .
