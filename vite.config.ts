@@ -110,9 +110,9 @@ export default defineConfig(({ mode }) => ({
       "/open-nova-stt": {
         target: "http://127.0.0.1:7869",
         changeOrigin: false,
-        // Keep browser traffic same-origin while the local STT service remains
-        // bound to loopback and accepts only governed ePublisher origins.
-        headers: { Origin: "http://localhost:3101" },
+        // Preserve the browser Origin. Sovereign localhost origins are allowed
+        // by default; hosted ePublisher origins are explicitly allowlisted by
+        // the colocated Railway STT runtime.
         rewrite: (requestPath) => requestPath.replace(/^\/open-nova-stt/, ""),
       },
       "/open-nova-image": {
@@ -151,9 +151,9 @@ export default defineConfig(({ mode }) => ({
       "/open-nova-stt": {
         target: "http://127.0.0.1:7869",
         changeOrigin: false,
-        // Keep browser traffic same-origin while the local STT service remains
-        // bound to loopback and accepts only governed ePublisher origins.
-        headers: { Origin: "http://localhost:3101" },
+        // Preserve the browser Origin. Sovereign localhost origins are allowed
+        // by default; hosted ePublisher origins are explicitly allowlisted by
+        // the colocated Railway STT runtime.
         rewrite: (requestPath) => requestPath.replace(/^\/open-nova-stt/, ""),
       },
       "/open-nova-image": {
