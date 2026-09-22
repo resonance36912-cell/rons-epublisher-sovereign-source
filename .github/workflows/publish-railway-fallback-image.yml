@@ -5,6 +5,13 @@ on:
     branches: [main]
     paths:
       - ".github/workflows/publish-railway-fallback-image.yml"
+      - "Dockerfile.railway-colocated-stt"
+      - "scripts/start-railway-colocated-stt.sh"
+      - "vendor/ronsas-stt/**"
+      - "src/**"
+      - "package.json"
+      - "package-lock.json"
+      - "vite.config.ts"
 
 permissions:
   contents: read
@@ -15,32 +22,21 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  SOURCE_SHA: 5827b0b89abc8e5f13aa29593075edddbf80a9ae
   IMAGE: ghcr.io/resonance36912-cell/rons-epublisher-sovereign-source
 
 jobs:
   publish:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
-      - name: Checkout exact governed source
+      - name: Check out exact governed source
         uses: actions/checkout@v4
         with:
-          ref: ${{ env.SOURCE_SHA }}
+          ref: ${{ github.sha }}
 
-      - name: Create proven Node 22 fallback Dockerfile
+      - name: Set exact source SHA
         shell: bash
-        run: |
-          cat > Dockerfile.railway-fallback <<'EOF'
-          FROM node:22-bookworm-slim
-          WORKDIR /app
-          COPY package.json package-lock.json ./
-          RUN npm ci
-          COPY . .
-          RUN npm run build
-          ENV HOST=0.0.0.0
-          EXPOSE 3000
-          CMD ["sh", "-c", "npm exec -- vite preview --host 0.0.0.0 --port ${PORT:-3000}"]
-          EOF
+        run: echo "SOURCE_SHA=${GITHUB_SHA}" >> "$GITHUB_ENV"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -52,11 +48,11 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push exact governed image
+      - name: Build and push exact governed colocated image
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: ./Dockerfile.railway-fallback
+          file: ./Dockerfile.railway-colocated-stt
           platforms: linux/amd64
           push: true
           provenance: false
@@ -65,7 +61,7 @@ jobs:
           labels: |
             org.opencontainers.image.source=https://github.com/resonance36912-cell/rons-epublisher-sovereign-source
             org.opencontainers.image.revision=${{ env.SOURCE_SHA }}
-            org.opencontainers.image.description=RONSAS governed Railway fallback image built with repository-proven Node 22/npm CI toolchain
+            org.opencontainers.image.description=RONSAS governed Railway fallback image with colocated hosted STT
 
       - name: Verify anonymous pull
         shell: bash
@@ -78,7 +74,7 @@ jobs:
           test -n "${DIGEST}"
           echo "Anonymous GHCR pull verified: ${DIGEST}"
 
-      - name: Smoke-test pulled image runtime
+      - name: Smoke-test pulled colocated image
         shell: bash
         run: |
           set -euo pipefail
@@ -88,14 +84,20 @@ jobs:
             docker rm -f "${NAME}" >/dev/null 2>&1 || true
           }
           trap cleanup EXIT
+
           docker run -d --name "${NAME}" -e PORT=3000 -p 127.0.0.1:3100:3000 "${IMAGE}:${SOURCE_SHA}"
-          for attempt in $(seq 1 30); do
-            if curl -fsS http://127.0.0.1:3100/ -o /tmp/epublisher-index.html; then
+
+          for attempt in $(seq 1 120); do
+            if curl -fsS http://127.0.0.1:3100/ -o /tmp/epublisher-index.html \
+              && curl -fsS http://127.0.0.1:3100/open-nova-stt/health/ready -o /tmp/stt-ready.json; then
               grep -qi '<!doctype html' /tmp/epublisher-index.html
-              echo "Runtime smoke test passed on attempt ${attempt}"
+              grep -Eq '"ok"[[:space:]]*:[[:space:]]*true' /tmp/stt-ready.json
+              grep -Eq '"service"[[:space:]]*:[[:space:]]*"epublisher-cloud-stt-colocated"' /tmp/stt-ready.json
+              echo "Runtime web + hosted STT smoke test passed on attempt ${attempt}"
               exit 0
             fi
-            sleep 1
+            sleep 2
           done
-          echo "Runtime smoke test failed" >&2
+
+          echo "Runtime colocated fallback smoke test failed" >&2
           exit 1
