@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { OPEN_NOVA_LOCAL_ONLY } from "@/lib/sovereign-mode";
 
 // Available Whisper model sizes (all multilingual, quantized).
 // Larger = more accurate, slower to download and transcribe.
@@ -36,14 +37,49 @@ export const WHISPER_MODELS: Record<WhisperModelSize, WhisperModelInfo> = {
 export const WHISPER_MODEL_ID = WHISPER_MODELS.base.id;
 export const WHISPER_MODEL_SIZE_LABEL = WHISPER_MODELS.base.sizeLabel;
 
-const LOCAL_STT_URL = String(import.meta.env.VITE_RONS_STT_URL || "http://127.0.0.1:7864").replace(/\/$/, "");
-let localModelReady = false;
+export type WhisperSttRoute = {
+  baseUrl: string | null;
+  mode: "local" | "hosted";
+};
 
-async function checkLocalWhisper(): Promise<void> {
-  const response = await fetch(`${LOCAL_STT_URL}/health`, { credentials: "omit", cache: "no-store" });
-  const payload = await response.json().catch(() => null) as { model_ready?: boolean; error?: string } | null;
-  if (!response.ok || !payload?.model_ready) throw new Error(payload?.error || "Local RONS Whisper service is not ready on port 7864");
-  localModelReady = true;
+export function resolveWhisperSttRoute(
+  localOnly: boolean,
+  localUrl: string | undefined,
+  hostedUrl: string | undefined,
+): WhisperSttRoute {
+  const local = String(localUrl || "").trim().replace(/\/$/, "");
+  const hosted = String(hostedUrl || "").trim().replace(/\/$/, "");
+  if (localOnly) {
+    return { baseUrl: local || "/open-nova-stt", mode: "local" };
+  }
+  return { baseUrl: hosted || null, mode: "hosted" };
+}
+
+const STT_ROUTE = resolveWhisperSttRoute(
+  OPEN_NOVA_LOCAL_ONLY,
+  import.meta.env.VITE_RONS_STT_URL,
+  import.meta.env.VITE_OPEN_NOVA_STT_URL,
+);
+let routedModelReady = false;
+
+async function checkRonsWhisper(): Promise<void> {
+  if (!STT_ROUTE.baseUrl) {
+    throw new Error("Hosted RONS Whisper is unavailable for this deployment");
+  }
+  const response = await fetch(`${STT_ROUTE.baseUrl}/health/ready`, {
+    credentials: "omit",
+    cache: "no-store",
+  });
+  const payload = await response.json().catch(() => null) as {
+    model_ready?: boolean;
+    error?: string;
+    reason?: string;
+  } | null;
+  if (!response.ok || !payload?.model_ready) {
+    const label = STT_ROUTE.mode === "local" ? "Local" : "Hosted";
+    throw new Error(payload?.error || payload?.reason || `${label} RONS Whisper service is not ready`);
+  }
+  routedModelReady = true;
 }
 
 // Map our app's i18n short codes to Whisper's expected language names.
@@ -117,25 +153,25 @@ export function useWhisperStt(options: WhisperSttHookOptions = {}) {
   const shouldKeepRollingRef = useRef(false);
   const pendingTranscriptionsRef = useRef(0);
 
-  const supported = isWhisperSttSupported();
+  const supported = isWhisperSttSupported() && !!STT_ROUTE.baseUrl;
 
   // Reset readiness when model size changes — different model needs its own load.
   useEffect(() => {
-    setModelReady(localModelReady);
+    setModelReady(routedModelReady);
     setLoadProgress(null);
   }, [modelInfo.id]);
 
   const handleProgress = useCallback((_data: any) => {}, []);
 
   const ensureModel = useCallback(async () => {
-    if (localModelReady) { setModelReady(true); return; }
+    if (routedModelReady) { setModelReady(true); return; }
     setIsLoadingModel(true);
-    setLoadProgress({ file: "RONS Whisper service", progress: 50 });
+    setLoadProgress({ file: `${STT_ROUTE.mode === "local" ? "Local" : "Hosted"} RONS Whisper service`, progress: 50 });
     try {
-      await checkLocalWhisper();
+      await checkRonsWhisper();
       setModelReady(true);
     } catch (err: any) {
-      onError?.(err?.message || "Local RONS Whisper service is unavailable");
+      onError?.(err?.message || `${STT_ROUTE.mode === "local" ? "Local" : "Hosted"} RONS Whisper service is unavailable`);
       throw err;
     } finally {
       setIsLoadingModel(false);
@@ -152,21 +188,22 @@ export function useWhisperStt(options: WhisperSttHookOptions = {}) {
     if (blob.size === 0) return;
     pendingTranscriptionsRef.current += 1;
     setIsTranscribing(true);
-    setPartialTranscript("Transcribing locally…");
+    setPartialTranscript(STT_ROUTE.mode === "local" ? "Transcribing locally…" : "Transcribing securely…");
     try {
-      const response = await fetch(`${LOCAL_STT_URL}/transcribe`, {
+      if (!STT_ROUTE.baseUrl) throw new Error("Hosted RONS Whisper is unavailable for this deployment");
+      const response = await fetch(`${STT_ROUTE.baseUrl}/transcribe`, {
         method: "POST",
         credentials: "omit",
         headers: { "Content-Type": blob.type || "application/octet-stream", "X-Filename": "epublisher-dictation.webm", "X-Mode": "best" },
         body: blob,
       });
       const payload = await response.json().catch(() => null) as { text?: string; words?: any[]; segments?: any[]; quality?: Record<string, unknown>; error?: string } | null;
-      if (!response.ok) throw new Error(payload?.error || `Local transcription failed (${response.status})`);
+      if (!response.ok) throw new Error(payload?.error || `${STT_ROUTE.mode === "local" ? "Local" : "Hosted"} transcription failed (${response.status})`);
       const text = String(payload?.text || "").trim();
       if (payload) setLastArtifact({ ...payload, capturedAt: new Date().toISOString() });
       if (text) setFullTranscript((prev) => (prev ? `${prev} ${text}` : text));
     } catch (err: any) {
-      onError?.(err?.message || "Local Whisper transcription failed");
+      onError?.(err?.message || `${STT_ROUTE.mode === "local" ? "Local" : "Hosted"} Whisper transcription failed`);
     } finally {
       pendingTranscriptionsRef.current = Math.max(0, pendingTranscriptionsRef.current - 1);
       if (pendingTranscriptionsRef.current === 0) { setIsTranscribing(false); setPartialTranscript(""); }
@@ -213,7 +250,7 @@ export function useWhisperStt(options: WhisperSttHookOptions = {}) {
 
   const start = useCallback(async () => {
     if (!supported) {
-      onError?.("Offline Whisper requires a browser with MediaRecorder and AudioContext.");
+      onError?.(`${STT_ROUTE.mode === "local" ? "Local" : "Hosted"} Whisper requires a configured STT route and a browser with MediaRecorder and AudioContext.`);
       return;
     }
     try {
@@ -284,5 +321,6 @@ export function useWhisperStt(options: WhisperSttHookOptions = {}) {
     modelInfo,
     partialTranscript,
     lastArtifact,
+    route: STT_ROUTE,
   };
 }
