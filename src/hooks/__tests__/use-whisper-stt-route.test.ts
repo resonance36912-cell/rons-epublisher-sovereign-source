@@ -24,9 +24,13 @@ describe("RONS microphone STT routing", () => {
       mode: "hosted",
     });
     expect(
-      resolveWhisperSttRoute(false, undefined, "https://stt.example.test/"),
+      resolveWhisperSttRoute(
+        false,
+        undefined,
+        "https://epublisher-fallback-production.up.railway.app/open-nova-stt/",
+      ),
     ).toEqual({
-      baseUrl: "https://stt.example.test",
+      baseUrl: "https://epublisher-fallback-production.up.railway.app/open-nova-stt",
       mode: "hosted",
     });
   });
