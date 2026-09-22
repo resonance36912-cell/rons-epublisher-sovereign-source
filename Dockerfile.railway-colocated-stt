@@ -36,7 +36,7 @@ COPY vendor/ronsas-stt/provenance.json /app/ronsas-stt/provenance.json
 COPY scripts/start-railway-colocated-stt.sh /app/start-railway-colocated-stt.sh
 
 ENV VITE_OPEN_NOVA_LOCAL_ONLY=0 \
-    VITE_OPEN_NOVA_STT_URL=/open-nova-stt
+    VITE_OPEN_NOVA_STT_URL=https://epublisher-fallback-production.up.railway.app/open-nova-stt
 
 RUN npm run build \
     && chmod 0555 /app/start-railway-colocated-stt.sh \
@@ -50,6 +50,7 @@ ENV HOST=0.0.0.0 \
     RONS_STT_PROVIDER=rons-cloud-faster-whisper \
     RONS_YTDLP_JS_RUNTIME=deno \
     RONS_STT_REQUIRE_ORIGIN=1 \
+    RONS_STT_ALLOWED_ORIGINS=https://epublisher.reson8.life,https://epublisher-fallback-production.up.railway.app \
     RONS_YOUTUBE_STT_MAX_SECONDS=3600 \
     RONS_STT_MAX_ACTIVE=1 \
     RONS_STT_PORT=7869
