@@ -66,7 +66,8 @@ async function checkRonsWhisper(): Promise<void> {
   if (!STT_ROUTE.baseUrl) {
     throw new Error("Hosted RONS Whisper is unavailable for this deployment");
   }
-  const response = await fetch(`${STT_ROUTE.baseUrl}/health/ready`, {
+  const healthPath = STT_ROUTE.mode === "local" ? "/health" : "/health/ready";
+  const response = await fetch(`${STT_ROUTE.baseUrl}${healthPath}`, {
     credentials: "omit",
     cache: "no-store",
   });
