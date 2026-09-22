@@ -17,7 +17,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 
-COPY ronsas-stt/ops/railway/epublisher-stt/requirements.txt /tmp/rons-stt-requirements.txt
+COPY vendor/ronsas-stt/requirements.txt /tmp/rons-stt-requirements.txt
 RUN python3 -m pip install --break-system-packages --no-cache-dir -r /tmp/rons-stt-requirements.txt
 
 RUN mkdir -p /models/faster-whisper-small \
@@ -30,8 +30,9 @@ snapshot_download(
 PY
 
 COPY . .
-RUN rm -rf /app/ronsas-stt
-COPY ronsas-stt/ops/ealiophin/runtime/syncvision-local-stt.py /app/ronsas-stt/server.py
+RUN mkdir -p /app/ronsas-stt
+COPY vendor/ronsas-stt/server.py /app/ronsas-stt/server.py
+COPY vendor/ronsas-stt/provenance.json /app/ronsas-stt/provenance.json
 COPY scripts/start-railway-colocated-stt.sh /app/start-railway-colocated-stt.sh
 
 ENV VITE_OPEN_NOVA_LOCAL_ONLY=0 \
