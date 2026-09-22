@@ -1,0 +1,45 @@
+name: Diagnose live Railway direct domain
+
+on:
+  push:
+    branches:
+      - ronsas/railway-image-alias-cutover-20260922
+    paths:
+      - ".github/workflows/diagnose-live-railway-direct.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      RAILWAY_URL: https://epublisher-fallback-production.up.railway.app
+      CUSTOM_URL: https://epublisher.reson8.life
+    steps:
+      - name: Probe Railway and custom domains
+        shell: bash
+        run: |
+          set -euo pipefail
+          for base in "$RAILWAY_URL" "$CUSTOM_URL"; do
+            echo "=== $base root ==="
+            curl -sS -D - "$base/" -o /tmp/root.body || true
+            head -c 300 /tmp/root.body || true
+            echo
+            echo "=== $base stt ==="
+            code="$(curl -sS -D /tmp/stt.headers -o /tmp/stt.body -w '%{http_code}' "$base/open-nova-stt/health/ready" || true)"
+            cat /tmp/stt.headers
+            cat /tmp/stt.body
+            echo
+            echo "status=$code base=$base"
+          done
+
+      - name: Require Railway direct STT readiness
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail-with-body -sS             "$RAILWAY_URL/open-nova-stt/health/ready" -o /tmp/ready.json
+          cat /tmp/ready.json
+          grep -Eq '"ok"[[:space:]]*:[[:space:]]*true' /tmp/ready.json
+          grep -Eq '"service"[[:space:]]*:[[:space:]]*"epublisher-cloud-stt-colocated"' /tmp/ready.json
