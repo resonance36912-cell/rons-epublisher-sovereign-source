@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "sourceRepository": "resonance36912-cell/RONSAS",
+  "sourceCommit": "b26ec14f2f2377c09d72720ece65f47a40860de5",
+  "files": [
+    {
+      "sourcePath": "ops/ealiophin/runtime/syncvision-local-stt.py",
+      "sourceBlobSha": "1fdde24f9a28c9d218ba2bd43b083880d2331340",
+      "vendoredPath": "vendor/ronsas-stt/server.py"
+    },
+    {
+      "sourcePath": "ops/railway/epublisher-stt/requirements.txt",
+      "sourceBlobSha": "af69fd5a965b24b251a16504a2724fbaee9b50ae",
+      "vendoredPath": "vendor/ronsas-stt/requirements.txt"
+    }
+  ],
+  "purpose": "Immutable build-time snapshot for the capacity-neutral colocated Railway ePublisher/STT fallback image."
+}
