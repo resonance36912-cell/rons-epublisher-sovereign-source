@@ -18,8 +18,9 @@ concurrency:
 env:
   IMAGE: ghcr.io/resonance36912-cell/rons-epublisher-sovereign-source
   RAILWAY_SOURCE_TAG: 5827b0b89abc8e5f13aa29593075edddbf80a9ae
-  PROVEN_TAG: f89d5560109f0de92cd079fc20a1be96999a39d2
-  ROLLBACK_TAG: railway-rollback-20260922-5827b0b89abc8e5f13aa29593075edddbf80a9ae
+  CURRENT_REVISION: f89d5560109f0de92cd079fc20a1be96999a39d2
+  PROVEN_TAG: f03251de59e5b90457591c136e47ee888f7cb8a3
+  ROLLBACK_TAG: railway-rollback-20260922-f89d5560109f0de92cd079fc20a1be96999a39d2
 
 jobs:
   alias:
@@ -39,7 +40,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Capture source and proven digests
+      - name: Capture current alias and proven digests
         shell: bash
         run: |
           set -euo pipefail
@@ -53,18 +54,21 @@ jobs:
           echo "old_digest=$old_digest"
           echo "new_digest=$new_digest"
 
-      - name: Preserve exact pre-cutover image under rollback tag
+      - name: Preserve current live image under rollback tag
         shell: bash
         run: |
           set -euo pipefail
           docker buildx imagetools create             -t "${IMAGE}:${ROLLBACK_TAG}"             "${IMAGE}@${OLD_DIGEST}"
+
           docker pull "${IMAGE}:${RAILWAY_SOURCE_TAG}"
           docker pull "${IMAGE}:${ROLLBACK_TAG}"
+
           source_id="$(docker inspect --format '{{.Id}}' "${IMAGE}:${RAILWAY_SOURCE_TAG}")"
           rollback_id="$(docker inspect --format '{{.Id}}' "${IMAGE}:${ROLLBACK_TAG}")"
           rollback_revision="$(docker inspect --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}' "${IMAGE}:${ROLLBACK_TAG}")"
+
           test "$source_id" = "$rollback_id"
-          test "$rollback_revision" = "${RAILWAY_SOURCE_TAG}"
+          test "$rollback_revision" = "${CURRENT_REVISION}"
           echo "rollback_preserved=true image_id=$rollback_id revision=$rollback_revision"
 
       - name: Repoint Railway source tag to proven image
@@ -72,11 +76,14 @@ jobs:
         run: |
           set -euo pipefail
           docker buildx imagetools create             -t "${IMAGE}:${RAILWAY_SOURCE_TAG}"             "${IMAGE}@${NEW_DIGEST}"
+
           docker pull "${IMAGE}:${PROVEN_TAG}"
           docker pull "${IMAGE}:${RAILWAY_SOURCE_TAG}"
+
           proven_id="$(docker inspect --format '{{.Id}}' "${IMAGE}:${PROVEN_TAG}")"
           alias_id="$(docker inspect --format '{{.Id}}' "${IMAGE}:${RAILWAY_SOURCE_TAG}")"
           alias_revision="$(docker inspect --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}' "${IMAGE}:${RAILWAY_SOURCE_TAG}")"
+
           test "$alias_id" = "$proven_id"
           test "$alias_revision" = "${PROVEN_TAG}"
           echo "railway_source_alias_ready=true image_id=$alias_id revision=$alias_revision"
@@ -86,6 +93,7 @@ jobs:
         run: |
           set -euo pipefail
           docker logout ghcr.io || true
+          docker image rm "${IMAGE}:${RAILWAY_SOURCE_TAG}" >/dev/null 2>&1 || true
           docker pull "${IMAGE}:${RAILWAY_SOURCE_TAG}"
           revision="$(docker inspect --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}' "${IMAGE}:${RAILWAY_SOURCE_TAG}")"
           test "$revision" = "${PROVEN_TAG}"
@@ -101,15 +109,20 @@ jobs:
             docker rm -f "$name" >/dev/null 2>&1 || true
           }
           trap cleanup EXIT
-          docker run -d --name "$name" --memory=1g --memory-swap=1g --cpus=2             -e PORT=8080 -p 127.0.0.1:3180:8080 "${IMAGE}:${RAILWAY_SOURCE_TAG}"
+
+          docker run -d --name "$name"             --memory=1g --memory-swap=1g --cpus=2             -e PORT=8080             -p 127.0.0.1:3180:8080             "${IMAGE}:${RAILWAY_SOURCE_TAG}"
+
           for attempt in $(seq 1 120); do
-            if curl -fsS http://127.0.0.1:3180/ -o /tmp/index.html               && curl -fsS http://127.0.0.1:3180/open-nova-stt/health/ready -o /tmp/ready.json; then
+            if curl -fsS http://127.0.0.1:3180/ -o /tmp/index.html               && curl -fsS                 -H 'Origin: https://epublisher.reson8.life'                 -D /tmp/ready.headers                 http://127.0.0.1:3180/open-nova-stt/health/ready                 -o /tmp/ready.json; then
               grep -qi '<!doctype html' /tmp/index.html
               grep -Eq '"ok"[[:space:]]*:[[:space:]]*true' /tmp/ready.json
+              grep -Eqi '^access-control-allow-origin:[[:space:]]*https://epublisher\.reson8\.life' /tmp/ready.headers
+              docker exec "$name" sh -lc                 "grep -R -q 'https://epublisher-fallback-production.up.railway.app/open-nova-stt' /app/dist"
               echo "railway_alias_smoke=true attempt=$attempt"
               exit 0
             fi
             sleep 1
           done
+
           echo "Railway alias smoke failed" >&2
           exit 1
