@@ -1,0 +1,105 @@
+name: Prepare Railway image alias cutover
+
+on:
+  push:
+    branches:
+      - ronsas/railway-image-alias-cutover-20260922
+    paths:
+      - ".github/workflows/prepare-railway-image-alias-cutover.yml"
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: epublisher-railway-image-alias-cutover
+  cancel-in-progress: false
+
+env:
+  IMAGE: ghcr.io/resonance36912-cell/rons-epublisher-sovereign-source
+  RAILWAY_SOURCE_TAG: 5827b0b89abc8e5f13aa29593075edddbf80a9ae
+  PROVEN_TAG: f89d5560109f0de92cd079fc20a1be96999a39d2
+  ROLLBACK_TAG: railway-rollback-20260922-5827b0b89abc8e5f13aa29593075edddbf80a9ae
+
+jobs:
+  alias:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out cutover authority
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Capture source and proven digests
+        shell: bash
+        run: |
+          set -euo pipefail
+          old_digest="$(docker buildx imagetools inspect "${IMAGE}:${RAILWAY_SOURCE_TAG}" --format '{{json .Manifest}}' | jq -r '.digest')"
+          new_digest="$(docker buildx imagetools inspect "${IMAGE}:${PROVEN_TAG}" --format '{{json .Manifest}}' | jq -r '.digest')"
+          test -n "$old_digest"
+          test -n "$new_digest"
+          test "$old_digest" != "$new_digest"
+          echo "OLD_DIGEST=$old_digest" >> "$GITHUB_ENV"
+          echo "NEW_DIGEST=$new_digest" >> "$GITHUB_ENV"
+          echo "old_digest=$old_digest"
+          echo "new_digest=$new_digest"
+
+      - name: Preserve exact pre-cutover image under rollback tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker buildx imagetools create             -t "${IMAGE}:${ROLLBACK_TAG}"             "${IMAGE}@${OLD_DIGEST}"
+          rollback_digest="$(docker buildx imagetools inspect "${IMAGE}:${ROLLBACK_TAG}" --format '{{json .Manifest}}' | jq -r '.digest')"
+          test "$rollback_digest" = "$OLD_DIGEST"
+          echo "rollback_digest=$rollback_digest"
+
+      - name: Repoint Railway source tag to proven image digest
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker buildx imagetools create             -t "${IMAGE}:${RAILWAY_SOURCE_TAG}"             "${IMAGE}@${NEW_DIGEST}"
+          aliased_digest="$(docker buildx imagetools inspect "${IMAGE}:${RAILWAY_SOURCE_TAG}" --format '{{json .Manifest}}' | jq -r '.digest')"
+          test "$aliased_digest" = "$NEW_DIGEST"
+          echo "aliased_digest=$aliased_digest"
+
+      - name: Verify anonymous pull resolves to proven revision
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker logout ghcr.io || true
+          docker pull "${IMAGE}:${RAILWAY_SOURCE_TAG}"
+          revision="$(docker inspect --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}' "${IMAGE}:${RAILWAY_SOURCE_TAG}")"
+          test "$revision" = "${PROVEN_TAG}"
+          echo "anonymous_alias_revision=$revision"
+
+      - name: Smoke-test alias under Railway resource envelope
+        shell: bash
+        run: |
+          set -euo pipefail
+          name=railway-alias-smoke
+          cleanup() {
+            docker logs "$name" 2>/dev/null || true
+            docker rm -f "$name" >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+          docker run -d --name "$name" --memory=1g --memory-swap=1g --cpus=2             -e PORT=8080 -p 127.0.0.1:3180:8080 "${IMAGE}:${RAILWAY_SOURCE_TAG}"
+          for attempt in $(seq 1 120); do
+            if curl -fsS http://127.0.0.1:3180/ -o /tmp/index.html               && curl -fsS http://127.0.0.1:3180/open-nova-stt/health/ready -o /tmp/ready.json; then
+              grep -qi '<!doctype html' /tmp/index.html
+              grep -Eq '"ok"[[:space:]]*:[[:space:]]*true' /tmp/ready.json
+              echo "railway_alias_smoke=true attempt=$attempt"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Railway alias smoke failed" >&2
+          exit 1
