@@ -1,0 +1,62 @@
+name: Validate colocated Railway STT image
+
+on:
+  push:
+    branches:
+      - ronsas/hosted-stt-routing-20260922
+    paths:
+      - "Dockerfile.railway-colocated-stt"
+      - "scripts/start-railway-colocated-stt.sh"
+      - ".github/workflows/validate-colocated-railway-stt.yml"
+      - ".github/workflows/publish-railway-fallback-image.yml"
+      - "src/**"
+      - "package.json"
+      - "package-lock.json"
+      - "vendor/ronsas-stt/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: epublisher-colocated-stt-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out ePublisher candidate
+        uses: actions/checkout@v4
+
+      - name: Build colocated fallback image
+        run: docker build -f Dockerfile.railway-colocated-stt -t epublisher-colocated-stt:test .
+
+      - name: Smoke-test web and strict STT readiness
+        shell: bash
+        run: |
+          set -euo pipefail
+          name=epublisher-colocated-stt-smoke
+          cleanup() {
+            docker logs "$name" 2>/dev/null || true
+            docker rm -f "$name" >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+
+          docker run -d --name "$name" -e PORT=3000 -p 127.0.0.1:3100:3000 epublisher-colocated-stt:test
+
+          for attempt in $(seq 1 120); do
+            if curl -fsS http://127.0.0.1:3100/ -o /tmp/index.html \
+              && curl -fsS http://127.0.0.1:3100/open-nova-stt/health/ready -o /tmp/stt-ready.json; then
+              grep -qi '<!doctype html' /tmp/index.html
+              grep -q '"ok": true' /tmp/stt-ready.json || grep -q '"ok":true' /tmp/stt-ready.json
+              grep -q '"service": "epublisher-cloud-stt-colocated"' /tmp/stt-ready.json \
+                || grep -q '"service":"epublisher-cloud-stt-colocated"' /tmp/stt-ready.json
+              echo "Colocated web + STT readiness smoke passed on attempt $attempt"
+              exit 0
+            fi
+            sleep 2
+          done
+
+          echo "Colocated web + STT readiness smoke failed" >&2
+          exit 1

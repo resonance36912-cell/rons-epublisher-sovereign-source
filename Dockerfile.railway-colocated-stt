@@ -1,0 +1,61 @@
+FROM node:22-bookworm-slim
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONUNBUFFERED=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PIP_NO_CACHE_DIR=1 \
+    DENO_INSTALL=/opt/deno \
+    PATH=/opt/deno/bin:$PATH
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates curl python3 python3-pip unzip \
+    && rm -rf /var/lib/apt/lists/* \
+    && curl -fsSL https://deno.land/install.sh | sh
+
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+RUN npm ci
+
+COPY vendor/ronsas-stt/requirements.txt /tmp/rons-stt-requirements.txt
+RUN python3 -m pip install --break-system-packages --no-cache-dir -r /tmp/rons-stt-requirements.txt
+
+RUN mkdir -p /models/faster-whisper-small \
+    && python3 - <<'PY'
+from huggingface_hub import snapshot_download
+snapshot_download(
+    repo_id="Systran/faster-whisper-small",
+    local_dir="/models/faster-whisper-small",
+)
+PY
+
+COPY . .
+RUN mkdir -p /app/ronsas-stt
+COPY vendor/ronsas-stt/server.py /app/ronsas-stt/server.py
+COPY vendor/ronsas-stt/provenance.json /app/ronsas-stt/provenance.json
+COPY scripts/start-railway-colocated-stt.sh /app/start-railway-colocated-stt.sh
+
+ENV VITE_OPEN_NOVA_LOCAL_ONLY=0 \
+    VITE_OPEN_NOVA_STT_URL=/open-nova-stt
+
+RUN npm run build \
+    && chmod 0555 /app/start-railway-colocated-stt.sh \
+    && chown -R node:node /app /models
+
+ENV HOST=0.0.0.0 \
+    RONS_STT_HOST=127.0.0.1 \
+    RONS_STT_MODELS_ROOT=/models \
+    RONS_WHISPER_SMALL_CT2=/models/faster-whisper-small \
+    RONS_STT_SERVICE_NAME=epublisher-cloud-stt-colocated \
+    RONS_STT_PROVIDER=rons-cloud-faster-whisper \
+    RONS_YTDLP_JS_RUNTIME=deno \
+    RONS_STT_REQUIRE_ORIGIN=1 \
+    RONS_YOUTUBE_STT_MAX_SECONDS=3600 \
+    RONS_STT_MAX_ACTIVE=1 \
+    RONS_STT_PORT=7869
+
+USER node
+
+EXPOSE 3000
+
+CMD ["/app/start-railway-colocated-stt.sh"]

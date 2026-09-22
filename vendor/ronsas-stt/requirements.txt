@@ -1,0 +1,5 @@
+av==17.1.0
+ctranslate2==4.8.2
+faster-whisper==1.2.1
+yt-dlp==2026.8.19
+yt-dlp-ejs==0.8.0

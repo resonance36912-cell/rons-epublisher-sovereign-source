@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Source } from "@/components/storyforge/StoryForgeContext";
-import { recoverYouTubeEvidenceSources } from "@/lib/youtube-evidence-recovery";
+import { recoverYouTubeEvidenceSources, resolveYouTubeSttRoute } from "@/lib/youtube-evidence-recovery";
 
 const video: Source = {
   id: "yt-1",
@@ -16,6 +16,26 @@ const video: Source = {
 afterEach(() => {
   vi.useRealTimers();
   vi.unstubAllGlobals();
+});
+
+describe("YouTube STT routing", () => {
+  it("keeps sovereign mode on the same-origin local proxy", () => {
+    expect(resolveYouTubeSttRoute(true, undefined)).toEqual({
+      baseUrl: "/open-nova-stt",
+      mode: "local",
+    });
+  });
+
+  it("requires an explicit hosted URL in cloud mode instead of falling back to localhost", () => {
+    expect(resolveYouTubeSttRoute(false, undefined)).toEqual({
+      baseUrl: null,
+      mode: "hosted",
+    });
+    expect(resolveYouTubeSttRoute(false, "https://stt.example.test/")).toEqual({
+      baseUrl: "https://stt.example.test",
+      mode: "hosted",
+    });
+  });
 });
 
 describe("local YouTube evidence recovery", () => {
