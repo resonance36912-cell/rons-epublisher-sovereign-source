@@ -1,0 +1,126 @@
+name: Validate colocated STT Railway resource envelope
+
+on:
+  push:
+    branches:
+      - ronsas/validate-colocated-stt-memory-20260922
+    paths:
+      - ".github/workflows/validate-colocated-stt-resource-envelope.yml"
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      IMAGE: ghcr.io/resonance36912-cell/rons-epublisher-sovereign-source:f89d5560109f0de92cd079fc20a1be96999a39d2
+    steps:
+      - name: Check out validation authority
+        uses: actions/checkout@v4
+
+      - name: Pull exact published image anonymously
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker logout ghcr.io || true
+          docker pull "$IMAGE"
+
+      - name: Run under Railway-equivalent resource envelope
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run -d \
+            --name epublisher-stt-envelope \
+            --memory=1g \
+            --memory-swap=1g \
+            --cpus=2 \
+            -e PORT=3000 \
+            -p 127.0.0.1:3100:3000 \
+            "$IMAGE"
+
+      - name: Wait for strict readiness
+        shell: bash
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 120); do
+            if curl -fsS http://127.0.0.1:3100/open-nova-stt/health/ready -o /tmp/ready.json; then
+              cat /tmp/ready.json
+              grep -Eq '"ok"[[:space:]]*:[[:space:]]*true' /tmp/ready.json
+              exit 0
+            fi
+            if ! docker inspect -f '{{.State.Running}}' epublisher-stt-envelope | grep -q true; then
+              docker logs epublisher-stt-envelope
+              exit 1
+            fi
+            sleep 1
+          done
+          docker logs epublisher-stt-envelope
+          exit 1
+
+      - name: Generate deterministic audio fixture
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import math, struct, wave
+          rate = 16000
+          seconds = 4
+          with wave.open('/tmp/fixture.wav', 'wb') as w:
+              w.setnchannels(1)
+              w.setsampwidth(2)
+              w.setframerate(rate)
+              frames = bytearray()
+              for i in range(rate * seconds):
+                  # Two low-amplitude tones separated by silence. This is not
+                  # expected to yield words; it forces decode + model inference.
+                  t = i / rate
+                  amp = 0
+                  if 0.5 <= t < 1.5:
+                      amp = int(2500 * math.sin(2 * math.pi * 220 * t))
+                  elif 2.0 <= t < 3.0:
+                      amp = int(2500 * math.sin(2 * math.pi * 330 * t))
+                  frames += struct.pack('<h', amp)
+              w.writeframes(frames)
+          PY
+          test -s /tmp/fixture.wav
+
+      - name: Force actual Whisper inference through public same-origin proxy
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail-with-body -sS \
+            -X POST \
+            -H 'Content-Type: audio/wav' \
+            -H 'X-Filename: resource-envelope-fixture.wav' \
+            -H 'X-Mode: fast' \
+            --data-binary @/tmp/fixture.wav \
+            http://127.0.0.1:3100/open-nova-stt/transcribe \
+            -o /tmp/transcribe.json
+          cat /tmp/transcribe.json
+          grep -Eq '"provider"[[:space:]]*:[[:space:]]*"rons-cloud-faster-whisper"' /tmp/transcribe.json
+          grep -Eq '"resolvedModel"[[:space:]]*:[[:space:]]*"whisper-small"' /tmp/transcribe.json
+
+      - name: Assert container stayed inside 1 GB envelope
+        shell: bash
+        run: |
+          set -euo pipefail
+          running="$(docker inspect -f '{{.State.Running}}' epublisher-stt-envelope)"
+          oom="$(docker inspect -f '{{.State.OOMKilled}}' epublisher-stt-envelope)"
+          stats="$(docker stats --no-stream --format '{{json .}}' epublisher-stt-envelope)"
+          echo "$stats"
+          test "$running" = "true"
+          test "$oom" = "false"
+          mem_usage="$(printf '%s' "$stats" | python3 -c 'import json,sys; print(json.load(sys.stdin)["MemUsage"])')"
+          echo "resource_envelope_pass=true memory=$mem_usage limit=1GiB cpus=2"
+
+      - name: Show runtime logs
+        if: always()
+        shell: bash
+        run: docker logs epublisher-stt-envelope 2>&1 || true
+
+      - name: Cleanup
+        if: always()
+        shell: bash
+        run: docker rm -f epublisher-stt-envelope >/dev/null 2>&1 || true
