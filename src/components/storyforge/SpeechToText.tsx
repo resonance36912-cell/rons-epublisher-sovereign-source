@@ -291,9 +291,9 @@ export function SpeechToText({ onTranscript, onSaveAndConfigure, onFormatAndCrea
             className={`px-2.5 py-1 rounded-full flex items-center gap-1 transition-colors ${
               isOffline ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
             } disabled:opacity-50 disabled:cursor-not-allowed`}
-            title="RONS local Whisper on Ealiophin (private, no cloud upload)"
+            title={OPEN_NOVA_LOCAL_ONLY ? "RONS local Whisper on Ealiophin (private, no cloud upload)" : "RONS hosted Whisper (encrypted cloud transcription)"}
           >
-            <HardDrive className="w-3 h-3" /> RONS Local
+            <HardDrive className="w-3 h-3" /> {OPEN_NOVA_LOCAL_ONLY ? "RONS Local" : "RONS Cloud"}
           </button>
         </div>
       </div>
@@ -310,7 +310,7 @@ export function SpeechToText({ onTranscript, onSaveAndConfigure, onFormatAndCrea
         </div>
       )}
 
-      {isOffline && whisperSupported && (
+      {isOffline && whisperSupported && OPEN_NOVA_LOCAL_ONLY && (
         <div className="rounded-lg border border-border/50 bg-card/40 p-2.5 space-y-2">
           <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Whisper model size</div>
           <div className="inline-flex items-center rounded-full border border-border/60 bg-background/60 p-0.5 text-xs">
@@ -343,9 +343,13 @@ export function SpeechToText({ onTranscript, onSaveAndConfigure, onFormatAndCrea
           <div className="text-muted-foreground space-y-1">
             <div>
               <span className="text-foreground font-medium">
-                Local model ({WHISPER_MODELS[whisperSize].sizeLabel}).
+                {OPEN_NOVA_LOCAL_ONLY
+                  ? `Local model (${WHISPER_MODELS[whisperSize].sizeLabel}).`
+                  : "RONS hosted Whisper."}
               </span>{" "}
-              The multilingual Whisper service runs locally on Ealiophin through RONS. Audio stays on this machine and is not sent to a cloud speech provider.
+              {OPEN_NOVA_LOCAL_ONLY
+                ? "The multilingual Whisper service runs locally on Ealiophin through RONS. Audio stays on this machine and is not sent to a cloud speech provider."
+                : "Audio is sent only to the governed RONS hosted STT service for transcription."}
             </div>
             {!whisperLangSupported && (
               <div className="text-[11px] text-destructive/90">
@@ -412,7 +416,7 @@ export function SpeechToText({ onTranscript, onSaveAndConfigure, onFormatAndCrea
                 <span className="relative inline-flex rounded-full h-3 w-3 bg-destructive" />
               </span>
               <span className="text-xs text-muted-foreground">
-                {isOffline ? "Recording · transcribing every 45s" : t("stt.listening")}
+                {isOffline ? `Recording · ${OPEN_NOVA_LOCAL_ONLY ? "local" : "hosted"} transcription every 45s` : t("stt.listening")}
               </span>
             </motion.div>
           )}
@@ -424,7 +428,7 @@ export function SpeechToText({ onTranscript, onSaveAndConfigure, onFormatAndCrea
           )}
 
           <span className="ml-auto text-[10px] uppercase tracking-wide text-muted-foreground/70">
-            {isBrowser ? "Browser · Free" : isOffline ? "RONS Whisper · Local" : "External premium · Disabled locally"}
+            {isBrowser ? "Browser · Free" : isOffline ? `RONS Whisper · ${OPEN_NOVA_LOCAL_ONLY ? "Local" : "Cloud"}` : "External premium · Disabled locally"}
           </span>
         </div>
 
@@ -513,7 +517,9 @@ export function SpeechToText({ onTranscript, onSaveAndConfigure, onFormatAndCrea
           {isBrowser
             ? "Free in-browser speech recognition. Best for short to medium dictation. Your draft autosaves locally — close and come back any time."
             : isOffline
-              ? "Rolling RONS Whisper transcription in 45s chunks on Ealiophin — ideal for dictating a whole book. Fully local and autosaved."
+              ? (OPEN_NOVA_LOCAL_ONLY
+                ? "Rolling RONS Whisper transcription in 45s chunks on Ealiophin — ideal for dictating a whole book. Fully local and autosaved."
+                : "Rolling RONS hosted Whisper transcription in 45s chunks — ideal for long dictation and autosaved locally.")
               : t("stt.hint")}
         </p>
       </div>
