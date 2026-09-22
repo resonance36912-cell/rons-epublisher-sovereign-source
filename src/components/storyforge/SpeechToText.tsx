@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useI18n } from "@/lib/i18n";
 import { useBrowserStt, isBrowserSttSupported } from "@/hooks/use-browser-stt";
-import { useWhisperStt, isWhisperSttSupported, resolveWhisperLanguage, WHISPER_MODELS, type WhisperModelSize } from "@/hooks/use-whisper-stt";
+import { useWhisperStt, resolveWhisperLanguage, WHISPER_MODELS, type WhisperModelSize } from "@/hooks/use-whisper-stt";
 import { OPEN_NOVA_LOCAL_ONLY } from "@/lib/sovereign-mode";
 
 interface SpeechToTextProps {
@@ -55,7 +55,6 @@ export function SpeechToText({ onTranscript, onSaveAndConfigure, onFormatAndCrea
   const [engine, setEngineState] = useState<SttEngine>(() => readEngine());
   const [whisperSize, setWhisperSizeState] = useState<WhisperModelSize>(() => readModelSize());
   const browserSupported = useMemo(() => isBrowserSttSupported(), []);
-  const whisperSupported = useMemo(() => isWhisperSttSupported(), []);
   const whisperLangSupported = useMemo(() => resolveWhisperLanguage(lang) !== undefined, [lang]);
 
   const setEngine = useCallback((next: SttEngine) => {
@@ -81,6 +80,7 @@ export function SpeechToText({ onTranscript, onSaveAndConfigure, onFormatAndCrea
     modelSize: whisperSize,
     onError: (msg) => toast({ title: "Whisper error", description: msg, variant: "destructive" }),
   });
+  const whisperSupported = whisperStt.supported;
 
   // Pre-warm the Whisper model as soon as the user selects the Offline tab,
   // so the first recording starts instantly without a download wait.
