@@ -1,0 +1,63 @@
+name: Validate PR55 hosted STT direct origin
+
+on:
+  push:
+    branches:
+      - ronsas/railway-image-alias-cutover-20260922
+    paths:
+      - ".github/workflows/validate-pr55-hosted-stt-direct-origin.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out exact PR55 candidate
+        uses: actions/checkout@v4
+        with:
+          ref: dd68c1557e201c74f03e2591c21a82b5aceb4cad
+
+      - name: Build exact colocated image
+        run: docker build -f Dockerfile.railway-colocated-stt -t epublisher-pr55:test .
+
+      - name: Run under Railway-equivalent envelope
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run -d --name epublisher-pr55             --memory=1g --memory-swap=1g --cpus=2             -e PORT=8080 -p 127.0.0.1:3180:8080             epublisher-pr55:test
+
+      - name: Verify hosted bundle embeds direct Railway STT endpoint
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker exec epublisher-pr55 sh -lc             "grep -R -q 'https://epublisher-fallback-production.up.railway.app/open-nova-stt' /app/dist"
+          echo "hosted_bundle_direct_stt=true"
+
+      - name: Verify web, readiness, and governed CORS
+        shell: bash
+        run: |
+          set -euo pipefail
+          cleanup() {
+            docker logs epublisher-pr55 2>/dev/null || true
+            docker rm -f epublisher-pr55 >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+
+          for attempt in $(seq 1 120); do
+            if curl -fsS http://127.0.0.1:3180/ -o /tmp/index.html               && curl -fsS                 -H 'Origin: https://epublisher.reson8.life'                 -D /tmp/ready.headers                 http://127.0.0.1:3180/open-nova-stt/health/ready                 -o /tmp/ready.json; then
+              grep -qi '<!doctype html' /tmp/index.html
+              grep -Eq '"ok"[[:space:]]*:[[:space:]]*true' /tmp/ready.json
+              grep -Eqi '^access-control-allow-origin:[[:space:]]*https://epublisher\.reson8\.life' /tmp/ready.headers
+              echo "governed_cors_ready=true attempt=$attempt"
+              exit 0
+            fi
+            if ! docker inspect -f '{{.State.Running}}' epublisher-pr55 | grep -q true; then
+              docker logs epublisher-pr55
+              exit 1
+            fi
+            sleep 1
+          done
+          exit 1
