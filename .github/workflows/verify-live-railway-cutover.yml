@@ -1,0 +1,72 @@
+name: Verify live Railway hosted STT cutover
+
+on:
+  push:
+    branches:
+      - ronsas/railway-image-alias-cutover-20260922
+    paths:
+      - ".github/workflows/verify-live-railway-cutover.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      BASE_URL: https://epublisher.reson8.life
+    steps:
+      - name: Verify public web root
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail-with-body -sS --retry 6 --retry-delay 2             "$BASE_URL/" -o /tmp/index.html
+          grep -qi '<!doctype html' /tmp/index.html
+          echo "public_web_root=true"
+
+      - name: Verify public hosted STT readiness
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail-with-body -sS --retry 6 --retry-delay 2             "$BASE_URL/open-nova-stt/health/ready" -o /tmp/ready.json
+          cat /tmp/ready.json
+          grep -Eq '"ok"[[:space:]]*:[[:space:]]*true' /tmp/ready.json
+          grep -Eq '"service"[[:space:]]*:[[:space:]]*"epublisher-cloud-stt-colocated"' /tmp/ready.json
+          grep -Eq '"defaultResolvedModel"[[:space:]]*:[[:space:]]*"whisper-small"' /tmp/ready.json
+          echo "public_stt_ready=true"
+
+      - name: Generate deterministic audio fixture
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import math, struct, wave
+          rate = 16000
+          seconds = 4
+          with wave.open('/tmp/live-fixture.wav', 'wb') as w:
+              w.setnchannels(1)
+              w.setsampwidth(2)
+              w.setframerate(rate)
+              frames = bytearray()
+              for i in range(rate * seconds):
+                  t = i / rate
+                  amp = 0
+                  if 0.5 <= t < 1.5:
+                      amp = int(2500 * math.sin(2 * math.pi * 220 * t))
+                  elif 2.0 <= t < 3.0:
+                      amp = int(2500 * math.sin(2 * math.pi * 330 * t))
+                  frames += struct.pack('<h', amp)
+              w.writeframes(frames)
+          PY
+          test -s /tmp/live-fixture.wav
+
+      - name: Force live Railway Whisper inference through public same-origin proxy
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail-with-body -sS --retry 2 --retry-delay 2             -X POST             -H "Origin: $BASE_URL"             -H 'Content-Type: audio/wav'             -H 'X-Filename: live-railway-fixture.wav'             -H 'X-Mode: fast'             --data-binary @/tmp/live-fixture.wav             "$BASE_URL/open-nova-stt/transcribe"             -o /tmp/transcribe.json
+          cat /tmp/transcribe.json
+          grep -Eq '"provider"[[:space:]]*:[[:space:]]*"rons-cloud-faster-whisper"' /tmp/transcribe.json
+          grep -Eq '"resolvedModel"[[:space:]]*:[[:space:]]*"whisper-small"' /tmp/transcribe.json
+          grep -Eq '"device"[[:space:]]*:[[:space:]]*"cpu"' /tmp/transcribe.json
+          echo "public_live_transcription=true"
