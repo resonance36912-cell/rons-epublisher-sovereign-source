@@ -58,18 +58,28 @@ jobs:
         run: |
           set -euo pipefail
           docker buildx imagetools create             -t "${IMAGE}:${ROLLBACK_TAG}"             "${IMAGE}@${OLD_DIGEST}"
-          rollback_digest="$(docker buildx imagetools inspect "${IMAGE}:${ROLLBACK_TAG}" --format '{{json .Manifest}}' | jq -r '.digest')"
-          test "$rollback_digest" = "$OLD_DIGEST"
-          echo "rollback_digest=$rollback_digest"
+          docker pull "${IMAGE}:${RAILWAY_SOURCE_TAG}"
+          docker pull "${IMAGE}:${ROLLBACK_TAG}"
+          source_id="$(docker inspect --format '{{.Id}}' "${IMAGE}:${RAILWAY_SOURCE_TAG}")"
+          rollback_id="$(docker inspect --format '{{.Id}}' "${IMAGE}:${ROLLBACK_TAG}")"
+          rollback_revision="$(docker inspect --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}' "${IMAGE}:${ROLLBACK_TAG}")"
+          test "$source_id" = "$rollback_id"
+          test "$rollback_revision" = "${RAILWAY_SOURCE_TAG}"
+          echo "rollback_preserved=true image_id=$rollback_id revision=$rollback_revision"
 
-      - name: Repoint Railway source tag to proven image digest
+      - name: Repoint Railway source tag to proven image
         shell: bash
         run: |
           set -euo pipefail
           docker buildx imagetools create             -t "${IMAGE}:${RAILWAY_SOURCE_TAG}"             "${IMAGE}@${NEW_DIGEST}"
-          aliased_digest="$(docker buildx imagetools inspect "${IMAGE}:${RAILWAY_SOURCE_TAG}" --format '{{json .Manifest}}' | jq -r '.digest')"
-          test "$aliased_digest" = "$NEW_DIGEST"
-          echo "aliased_digest=$aliased_digest"
+          docker pull "${IMAGE}:${PROVEN_TAG}"
+          docker pull "${IMAGE}:${RAILWAY_SOURCE_TAG}"
+          proven_id="$(docker inspect --format '{{.Id}}' "${IMAGE}:${PROVEN_TAG}")"
+          alias_id="$(docker inspect --format '{{.Id}}' "${IMAGE}:${RAILWAY_SOURCE_TAG}")"
+          alias_revision="$(docker inspect --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}' "${IMAGE}:${RAILWAY_SOURCE_TAG}")"
+          test "$alias_id" = "$proven_id"
+          test "$alias_revision" = "${PROVEN_TAG}"
+          echo "railway_source_alias_ready=true image_id=$alias_id revision=$alias_revision"
 
       - name: Verify anonymous pull resolves to proven revision
         shell: bash
