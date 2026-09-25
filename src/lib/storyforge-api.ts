@@ -176,7 +176,7 @@ export function localFormatChapters(text: string, config: Partial<StoryConfig>):
   }
   const chapters = groups.filter((group) => group.length > 0).map((group, index) => ({
     id: `local-page-${index + 1}`,
-    title: index === 0 ? topic : `${topic} — Part ${index + 1}`,
+    title: index === 0 ? topic : `${topic} â€” Part ${index + 1}`,
     body: group.join("\n\n"),
     imagePrompt: `Production storyboard frame for ${topic}, scene ${index + 1}; depict only concrete visual details supported by this scene text; cinematic composition, coherent characters, no invented events`,
     notes: `Relevance-gated locally; ${source.length} substantive source blocks merged into a governed ${maxChapters}-scene maximum. Short/noisy fragments are suppressed.`,
@@ -208,7 +208,7 @@ function withRequestId<T extends Record<string, unknown>>(
 // One-shot per browser session: only nudge the user once about free-tier images.
 let _freeTierImageToastShown = false;
 
-// ── Types ────────────────────────────────────────────────────────────────
+// â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 type DiscoveredSource = {
   url: string;
@@ -229,7 +229,7 @@ type OutlineChapter = {
 type StoryboardProgress = {
   message: string;
   percent: number;
-  /** Correlation id for the entire storyboard flow — surface in UI so the
+  /** Correlation id for the entire storyboard flow â€” surface in UI so the
    *  user can copy it for support / audit-log lookup. */
   requestId?: string;
   /** True while a retry-after-timeout is in flight. */
@@ -390,9 +390,9 @@ function shouldBubbleImageError(message: string): boolean {
   return ["daily image generation limit reached", "rate limit", "credits exhausted", "unauthorized"].some((term) => normalized.includes(term));
 }
 
-// ── Research Pipeline (Job-based) ────────────────────────────────────────
+// â”€â”€ Research Pipeline (Job-based) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-/** Start a research job — returns immediately with jobId */
+/** Start a research job â€” returns immediately with jobId */
 export async function startResearchJob(
   topic: string,
   config?: Partial<StoryConfig>,
@@ -467,7 +467,7 @@ export async function pollResearchJob(
   throw new Error("Research job timed out after " + Math.round(maxWaitMs / 1000) + "s");
 }
 
-// ── Legacy discover/process (kept for compatibility, now uses job pipeline) ──
+// â”€â”€ Legacy discover/process (kept for compatibility, now uses job pipeline) â”€â”€
 
 export async function discoverSources(
   topic: string
@@ -553,7 +553,7 @@ export async function processSources(
   }));
 }
 
-// ── Storyboard Generation (unchanged) ───────────────────────────────────
+// â”€â”€ Storyboard Generation (unchanged) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export async function generateStoryboard(
   sources: Source[],
@@ -563,13 +563,13 @@ export async function generateStoryboard(
   const readySources = (sources || []).filter((source) => source.content?.trim() && source.status === "ready" && !(source.type === "search" && !source.canonicalUrl && !source.url));
   if (config.researchBasis === "topic_only" && readySources.length === 0) {
     const requestId = `topic-only-${Date.now()}`;
-    onProgress?.({ message: "Creating an explicitly unresearched topic-only draft…", percent: 80, requestId });
+    onProgress?.({ message: "Creating an explicitly unresearched topic-only draftâ€¦", percent: 80, requestId });
     const chapters = localFormatChapters(config.topic || "Untitled", config).map((chapter) => ({
       ...chapter,
       references: [],
       notes: `${chapter.notes || ""} Research basis: topic-only draft; no usable evidence sources were supplied.`.trim(),
     }));
-    onProgress?.({ message: "Topic-only draft ready — factual verification required", percent: 100, requestId });
+    onProgress?.({ message: "Topic-only draft ready â€” factual verification required", percent: 100, requestId });
     return chapters;
   }
   if (readySources.length === 0) {
@@ -581,7 +581,7 @@ export async function generateStoryboard(
   }
   if (OPEN_NOVA_LOCAL_ONLY) {
     const requestId = `local-${Date.now()}`;
-    onProgress?.({ message: "Structuring local source material…", percent: 60, requestId });
+    onProgress?.({ message: "Structuring local source materialâ€¦", percent: 60, requestId });
     const sourceTerms = Array.from(new Set((config.topic || "").toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length > 3)));
     const scoredSources = readySources.map((source, index) => {
       const haystack = `${source.title || ""} ${(source.content || "").slice(0, 12000)}`.toLowerCase();
@@ -609,7 +609,7 @@ export async function generateStoryboard(
         date,
         location,
         timestamp ? `relevant section/time: ${timestamp}` : undefined,
-      ].filter(Boolean).join(" · ");
+      ].filter(Boolean).join(" Â· ");
     };
     let chapters = localFormatChapters(text || config.topic || "Untitled", config).map((chapter) => ({
       ...chapter,
@@ -619,7 +619,7 @@ export async function generateStoryboard(
     const premiumStoryboard = (config.visualQuality || "premium") !== "fast";
     if ((premiumStoryboard || getFreeCloudQualityEnabled()) && chapters.length > 0 && usable.length > 0) {
       try {
-        onProgress?.({ message: "Directing premium storyboard structure and visual prompts…", percent: 82, requestId });
+        onProgress?.({ message: "Directing premium storyboard structure and visual promptsâ€¦", percent: 82, requestId });
         const sourceExcerpts = usable.map((source, sourceIndex) => ({
           sourceIndex,
           title: source.title,
@@ -642,11 +642,28 @@ export async function generateStoryboard(
           sourceExcerpts,
           baselineChapters: chapters.map((chapter) => ({ title: chapter.title, body: chapter.body, imagePrompt: chapter.imagePrompt })),
         });
+        let refinementPercent = 82;
+        let refinementDone = false;
+        const refinementStartedAt = Date.now();
         onProgress?.({
-          message: `Refining ${chapters.length} storyboard chapters with governed AI; this can take several minutes for long sources…`,
-          percent: 84,
+          message: `Starting governed AI refinement for ${chapters.length} storyboard chapters…`,
+          percent: refinementPercent,
           requestId,
         });
+        const tickRefinementProgress = () => {
+          if (refinementDone) return;
+          const elapsedSeconds = Math.floor((Date.now() - refinementStartedAt) / 1000);
+          refinementPercent = Math.min(94, refinementPercent + 1);
+          onProgress?.({
+            message: elapsedSeconds < 30
+              ? `Refining ${chapters.length} storyboard chapters with governed AI…`
+              : `Local AI is still refining ${chapters.length} chapters (${elapsedSeconds}s elapsed); long evidence-heavy sources can take 1–3 minutes…`,
+            percent: refinementPercent,
+            requestId,
+          });
+          window.setTimeout(tickRefinementProgress, 8000);
+        };
+        window.setTimeout(tickRefinementProgress, 8000);
         const refined = await requestHybridText({
           prompt,
           allowCloud: getFreeCloudQualityEnabled(),
@@ -657,6 +674,7 @@ export async function generateStoryboard(
           timeoutMs: config.visualQuality === "storyboard_pro" ? 300_000 : 240_000,
           system: `You are the Resonance ePublisher premium manuscript editor and storyboard director. Use ONLY the supplied source excerpts and baseline chapters. Preserve the exact story-page count and the factual meaning of the evidence. Never invent facts, dates, names, quotations, dialogue, emotions, adversity, achievements, causal claims, or events. Transform source transcripts into polished publication prose: remove broadcast housekeeping, greetings, repeated interviewer questions, time announcements, and conversational filler unless editorially necessary; preserve meaningful direct quotations only when supported and attribute them to the correct speaker. Never convert an interviewer's words into the subject's memories. Publication type: ${config.publicationType || "profile"}; perspective: ${config.narrativePerspective || "third_person"}; audience: ${config.audience || "general"}. First-person autobiography is permitted only when firstPersonSubjectApproved is true; otherwise use third-person narration and do not create first-person memory claims. If sources conflict or a name, age, company, date, place, or term is uncertain, preserve the uncertainty or qualify it rather than choosing or silently correcting. Build the manuscript across ALL supplied sources by theme and chronology; do not map one source to one chapter. Merge corroborating evidence where appropriate and keep conflicting evidence visibly qualified. Give every chapter a distinct descriptive heading based on its actual supported content; do not use repeated titles or generic Part N headings. Build readable paragraphs, transitions, coherent openings and conclusions, while keeping all factual content traceable to supplied evidence. If evidence is thin, write a concise supported treatment rather than padding. Before writing each chapter, construct a compact evidence ledger and return it with the chapter. Each evidenceClaims entry must contain the retained claim, speaker when known, zero-based sourceIndexes, eventDate when explicitly supported, verificationStatus (supported, conflicting, or unresolved), and editorialTreatment (include, attribute, qualify, or omit). Never mark a claim supported merely because it appears in the baseline draft; support must come from sourceExcerpts. Return sourceIndexes as zero-based indexes into sourceExcerpts for the evidence actually used by each chapter. Quality profile: ${config.visualQuality || "premium"}. Every imagePrompt must be a professional production brief grounded in that chapter: subject/action, environment, composition, camera/lens language, lighting, colour palette, material/texture detail, mood, and continuity anchors; no invented events, text overlays, watermarks, or contradictory anatomy. For storyboard_pro, emphasize recurring identity, wardrobe/environment continuity, deliberate shot variety, and editorial sequencing. Return JSON only as {"chapters":[{"title":string,"body":string,"imagePrompt":string,"sourceIndexes":number[],"evidenceClaims":[{"claim":string,"speaker":string|null,"sourceIndexes":number[],"eventDate":string|null,"verificationStatus":"supported"|"conflicting"|"unresolved","editorialTreatment":"include"|"attribute"|"qualify"|"omit"}]}]}. No markdown fences.`,
         });
+        refinementDone = true;
         type RefinedEvidenceClaim = {
           claim?: string;
           speaker?: string | null;
@@ -736,12 +754,12 @@ export async function generateStoryboard(
         onProgress?.({ message: "Quality boost unavailable; keeping explicit fast structural draft", percent: 96, requestId });
       }
     }
-    onProgress?.({ message: premiumStoryboard ? "Publication manuscript ready for editorial review" : "Fast structural draft ready — editorial review required", percent: 100, requestId });
+    onProgress?.({ message: premiumStoryboard ? "Publication manuscript ready for editorial review" : "Fast structural draft ready â€” editorial review required", percent: 100, requestId });
     return chapters;
   }
   // Open a single correlation scope for the whole storyboard flow. Every
-  // edge invocation below — outline, each chapter batch, and any chapter
-  // image generated by `generateChapterImage` while this scope is live —
+  // edge invocation below â€” outline, each chapter batch, and any chapter
+  // image generated by `generateChapterImage` while this scope is live â€”
   // shares the same request id, so the resulting audit rows
   // (storage_access_logs + api_usage_logs) can be joined together.
   assertMaxCount("sources", (sources || []).length, AI_INPUT_LIMITS.storyboardMaxSources);
@@ -754,7 +772,7 @@ export async function generateStoryboard(
   try {
     // Emit the requestId up-front so the UI can render a copyable badge
     // immediately, before the first edge invocation completes.
-    onProgress?.({ message: "Planning storyboard chapters…", percent: 56, requestId });
+    onProgress?.({ message: "Planning storyboard chaptersâ€¦", percent: 56, requestId });
 
     const trimmedSources = sources
       .filter((s) => s.content && s.status === "ready")
@@ -774,7 +792,7 @@ export async function generateStoryboard(
       {
         onRetry: (attempt, maxAttempts, reason) =>
           onProgress?.({
-            message: `Outline timed out — retrying (attempt ${attempt}/${maxAttempts})…`,
+            message: `Outline timed out â€” retrying (attempt ${attempt}/${maxAttempts})â€¦`,
             percent: 56,
             requestId,
             retrying: true,
@@ -803,7 +821,7 @@ export async function generateStoryboard(
       const percent = 60 + ((batchIndex + 1) / totalBatches) * 34;
 
       onProgress?.({
-        message: `Writing chapters ${batchIndex * batchSize + 1}-${batchIndex * batchSize + batchOutlines.length} of ${outlines.length}…`,
+        message: `Writing chapters ${batchIndex * batchSize + 1}-${batchIndex * batchSize + batchOutlines.length} of ${outlines.length}â€¦`,
         percent,
         requestId,
       });
@@ -834,7 +852,7 @@ export async function generateStoryboard(
         {
           onRetry: (attempt, maxAttempts, reason) =>
             onProgress?.({
-              message: `Chapter batch ${batchIndex + 1}/${totalBatches} timed out — retrying (attempt ${attempt}/${maxAttempts})…`,
+              message: `Chapter batch ${batchIndex + 1}/${totalBatches} timed out â€” retrying (attempt ${attempt}/${maxAttempts})â€¦`,
               percent,
               requestId,
               retrying: true,
@@ -876,7 +894,7 @@ export async function generateStoryboard(
   }
 }
 
-// ── Format raw text into chapters using AI ──────────────────────────────
+// â”€â”€ Format raw text into chapters using AI â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export async function formatTextToChapters(
   text: string,
   config: Partial<StoryConfig>
@@ -952,7 +970,7 @@ export async function generateChapterImage(
       return { chapterId, imageUrl: `${window.location.origin}/fallback-chapter.png` };
     }
   }
-  // Client-generated correlation ID — links this UI action to the api_usage_logs row.
+  // Client-generated correlation ID â€” links this UI action to the api_usage_logs row.
   // If a storyboard flow is currently in scope, inherit its request id so
   // every chapter image generated as part of that flow is grouped under
   // the same correlation id across api_usage_logs and storage audits.
@@ -986,7 +1004,7 @@ export async function generateChapterImage(
     return { chapterId, imageUrl: FALLBACK_IMAGE, correlationId: data?.correlationId ?? correlationId };
   }
 
-  // Notify widgets (e.g. AddonCreditsWidget) that a successful image gen happened —
+  // Notify widgets (e.g. AddonCreditsWidget) that a successful image gen happened â€”
   // add-on credits may have been deducted server-side.
   try {
     const { notifyAddonCreditsChanged } = await import("./addon-credits-events");
