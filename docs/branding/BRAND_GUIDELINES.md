@@ -1,5 +1,20 @@
 # The Resonance — Brand & Alignment Pack
 
+## 0. Current authority and 2026 UI alignment
+
+This document remains useful for product identity, voice, logos, and per-app accent history, but **commercial state is governed by the current RONSAS / Resonance Hub source of truth**.
+
+As of the current RONSAS promotional mode:
+- new billing and checkout are paused;
+- product access is promoted as free while real usage and delivery costs are measured;
+- older price tables below are historical planning references unless and until the Hub explicitly reactivates pricing;
+- UI must not imply a current paid tier, checkout requirement, pack balance, or recurring subscription where the authoritative Hub does not.
+
+For portfolio UI/UX, use the canonical **Resonance Sovereign Spectrum 2026** direction:
+`resonance36912-cell/RONSAS/docs/design/RESONANCE_SOVEREIGN_SPECTRUM_2026.md`.
+
+The theme preserves each product accent while aligning navigation, work surfaces, AI/governance state, accessibility, responsive density, and sovereign-dark operational UI across the suite.
+
 **Version 1.0 · 27 May 2026**
 Built in South Africa · ZAR pricing · POPIA-conscious
 
