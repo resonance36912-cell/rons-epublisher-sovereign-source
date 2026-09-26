@@ -143,3 +143,10 @@ Regardless of `pathStyle`, the file is reachable two ways:
    resolves and writes to the absolute path. With `"absolute"` the
    header is a clickable `file://` URL; with `"relative"` /
    `"basename"` consult the CI run's `test-results/` artifact bundle.
+
+
+## Resonance UI/UX alignment
+
+This application follows the **Resonance Sovereign Spectrum 2026** portfolio design system: sovereign-dark operational surfaces, restrained translucent control layers, product-specific accents, explicit AI/governance state, accessible focus/motion behavior, and RONSAS-aligned product identity.
+
+Canonical design authority: https://github.com/resonance36912-cell/RONSAS/blob/main/docs/design/RESONANCE_SOVEREIGN_SPECTRUM_2026.md
