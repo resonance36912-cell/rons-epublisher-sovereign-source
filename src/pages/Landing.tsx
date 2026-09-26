@@ -839,7 +839,7 @@ export default function Landing() {
             "@type": "FAQPage",
             mainEntity: [
               { "@type": "Question", name: "Can I create an eBook from any topic?", acceptedAnswer: { "@type": "Answer", text: "Yes. Start from a topic, idea, title, script, podcast, or educational theme and Resonance ePublisher will research and structure it for you." } },
-              { "@type": "Question", name: "Can I export the final book?", acceptedAnswer: { "@type": "Answer", text: "Yes. Finished books export as PDF, HTML eBook, or ePub, with optional narrated MP4 video on Standard and Premium tiers." } },
+              { "@type": "Question", name: "Can I export the final book?", acceptedAnswer: { "@type": "Answer", text: "Yes. Finished books can export as PDF, HTML eBook, or ePub, with narrated audiovisual output where the current workspace capabilities support it. Promotional access does not require payment." } },
               { "@type": "Question", name: "Does the AI research the topic for me?", acceptedAnswer: { "@type": "Answer", text: "Yes. The platform performs structured AI research, but users should verify factual, medical, legal, financial, or technical content before publishing." } },
               { "@type": "Question", name: "Can I use this for business or education?", acceptedAnswer: { "@type": "Answer", text: "Yes. Resonance ePublisher is suitable for training material, lead magnets, product guides, educational content, and creator products." } },
               { "@type": "Question", name: "Can I add narration and music?", acceptedAnswer: { "@type": "Answer", text: "Yes. Books can include voice narration plus background music for a full AudioVisual experience." } },
@@ -946,7 +946,7 @@ export default function Landing() {
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
             </span>
-            Tools in tune with you
+            RONSAS governed · Editorial intelligence
           </div>
 
           <h1 className="text-4xl md:text-6xl font-display font-bold leading-[0.98] tracking-tight">
@@ -1040,7 +1040,7 @@ export default function Landing() {
 
           {/* Trust strip */}
           <p className="text-xs text-muted-foreground/80 pt-2">
-            🇿🇦 Built in South Africa · ZAR pricing · Once-off packs via The Resonance Hub · POPIA-conscious
+            🇿🇦 Built in South Africa · RONSAS governed · Free promotional access · No payment required · POPIA-conscious
           </p>
 
           {/* Hero illustration – animated floating + glow */}
